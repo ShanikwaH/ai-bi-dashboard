@@ -24,7 +24,11 @@ try:
 except ImportError:
     GENAI_AVAILABLE = False
     genai = None
-
+    # Don't use st.error here - it crashes on import!
+    
+    api_key = st.text_input(
+        "Enter Gemini API Key",
+        ...
 # Custom CSS
 st.markdown("""
     <style>
@@ -373,10 +377,15 @@ with st.sidebar:
     st.markdown("### 🤖 AI BI Dashboard")
     st.title("🤖 AI-Powered BI")
     
-    # Gemini API Configuration
-    with st.expander("⚙️ Configure Gemini AI", expanded=not st.session_state.gemini_api_key):
-        api_key = st.text_input(
-            "Enter Gemini API Key",
+# Gemini API Configuration
+with st.expander("⚙️ Configure Gemini AI", expanded=not st.session_state.gemini_api_key):
+    if not GENAI_AVAILABLE:
+        st.error("⚠️ Google Generative AI is not installed. Please add it to requirements.txt")
+        st.stop()
+    
+    api_key = st.text_input(
+        "Enter Gemini API Key",
+        ...
             type="password",
             value=st.session_state.gemini_api_key if st.session_state.gemini_api_key else "",
             help="Get your API key from https://aistudio.google.com/welcome"
@@ -1406,3 +1415,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
