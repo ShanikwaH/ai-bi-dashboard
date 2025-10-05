@@ -217,9 +217,47 @@ def generate_sample_data():
 # Load data
 @st.cache_data
 def load_data():
-    "Load all CSV files from tests/data directory"
-    data_dir = Path(__C:/Users/nikki/ai-bi-dashboard/tests/data__).parent.parent / 'tests' / 'data'
+    """Load all CSV files from tests/data directory"""
+    # For Streamlit Cloud and local deployment
+    # When deployed on Streamlit Cloud, files are cloned from GitHub
     
+    # Primary paths to try (in order of preference)
+    # app.py is located in main/ folder
+    possible_paths = [
+        Path(__file__).parent.parent / 'tests' / 'data',  # main/app.py -> tests/data (PRIMARY)
+        Path('tests/data'),  # Relative to project root (Streamlit Cloud)
+        Path.cwd() / 'tests' / 'data',  # Current working directory
+        Path(__file__).parent / 'tests' / 'data',  # If tests/data was in main/
+    ]
+    
+    data_dir = None
+    for path in possible_paths:
+        if path.exists() and (path / 'sales_sample.csv').exists():
+            data_dir = path
+            break
+    
+    if data_dir is None:
+        st.error("⚠️ Data files not found!")
+        st.write("**Searched in:**")
+        for path in possible_paths:
+            st.code(str(path.resolve()))
+        
+        st.info("""
+        **For local development:**
+        1. Run: `python generate_test_data.py`
+        2. Then restart the Streamlit app
+        
+        **For Streamlit Cloud:**
+        1. Make sure `tests/data/` folder is pushed to GitHub
+        2. Check your repository: https://github.com/shanikwah/ai-bi-dashboard/tree/main/tests/data
+        3. Files should include:
+           - sales_sample.csv
+           - healthcare_sample.csv
+           - finance_sample.csv
+        """)
+        st.stop()
+    
+    # Load the CSV files
     sales_df = pd.read_csv(data_dir / 'sales_sample.csv')
     healthcare_df = pd.read_csv(data_dir / 'healthcare_sample.csv')
     finance_df = pd.read_csv(data_dir / 'finance_sample.csv')
@@ -231,13 +269,6 @@ def load_data():
     finance_df['timestamp'] = pd.to_datetime(finance_df['timestamp'])
     
     return sales_df, healthcare_df, finance_df
-
-# Load data
-try:
-    sales_df, healthcare_df, finance_df = load_data()
-except FileNotFoundError:
-    st.error("⚠️ Data files not found! Please run generate_test_data.py first.")
-    st.stop()
 
 def calculate_kpis(df, date_col, value_col):
     """Calculate key performance indicators"""
@@ -1234,6 +1265,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
