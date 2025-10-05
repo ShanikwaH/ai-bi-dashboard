@@ -765,13 +765,13 @@ elif page == "🔍 Exploratory Analysis":
                     fig = px.histogram(df, x=selected_col, nbins=50, 
                                      title=f"Distribution of {selected_col}",
                                      color_discrete_sequence=['#1f77b4'])
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
                 
                 with col2:
                     fig = px.box(df, y=selected_col, 
                                title=f"Box Plot of {selected_col}",
                                color_discrete_sequence=['#ff7f0e'])
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No numeric columns found in the dataset.")
         
@@ -798,7 +798,7 @@ elif page == "🔍 Exploratory Analysis":
                            title="Missing Values by Column (%)",
                            color='Missing %',
                            color_continuous_scale='Reds')
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.success("✅ No missing values detected in the dataset!")
             
@@ -839,7 +839,7 @@ elif page == "📈 Visualizations":
                             title=f"{value_col} Over Time",
                             labels={date_col: "Date", value_col: "Value"})
                 fig.update_layout(height=500)
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
                 
                 kpis = calculate_kpis(df_sorted, date_col, value_col)
                 
@@ -876,12 +876,12 @@ elif page == "📈 Visualizations":
                                title=f"{val_col} by {cat_col}",
                                color=val_col,
                                color_continuous_scale='Blues')
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
                 
                 with col2:
                     fig = px.pie(grouped, values=val_col, names=cat_col,
                                title=f"{val_col} Distribution by {cat_col}")
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("Please ensure your dataset has both categorical and numeric columns.")
         
@@ -899,7 +899,7 @@ elif page == "📈 Visualizations":
                               aspect="auto",
                               title="Correlation Heatmap")
                 fig.update_layout(height=600)
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
                 
                 st.subheader("Strongest Correlations")
                 
@@ -931,7 +931,7 @@ elif page == "📈 Visualizations":
                                title=f"Total {value_col} by Region",
                                color='sum',
                                color_continuous_scale='Viridis')
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
                     
                     st.dataframe(grouped, width='stretch')
                 else:
@@ -1036,7 +1036,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     hovermode='x unified'
                 )
                 
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
                 
                 # Forecast summary
                 st.subheader("Forecast Summary")
@@ -1141,7 +1141,7 @@ elif page == "📊 Statistical Analysis":
                         fig = px.histogram(df, x=col, marginal="box",
                                          title=f"Distribution of {col}",
                                          color_discrete_sequence=['#636EFA'])
-                        st.plotly_chart(fig, width='stretch')
+                        st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No numeric columns found for statistical analysis.")
         
@@ -1187,7 +1187,7 @@ elif page == "📊 Statistical Analysis":
                     height=500
                 )
                 
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
                 
                 recent_avg = df_sorted[value_col].tail(30).mean()
                 overall_avg = df_sorted[value_col].mean()
@@ -1230,7 +1230,7 @@ elif page == "📊 Statistical Analysis":
                 
                 fig = px.box(df, y=selected_col, title=f"Box Plot with Outliers: {selected_col}",
                            points="outliers")
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
                 
                 if len(outliers) > 0:
                     st.subheader("Outlier Data")
@@ -1397,6 +1397,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-
