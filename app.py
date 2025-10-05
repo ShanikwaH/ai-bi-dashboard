@@ -416,7 +416,7 @@ if page == "🏠 Home":
 elif page == "📁 Data Upload":
     st.header("📁 Data Upload & Management")
     
-    tab1, tab2 = st.tabs(["Upload Data", "Use Sample Data"])
+tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "🔧 Generate Data", "🤖 AI Insights"])
     
     with tab1:
         uploaded_file = st.file_uploader(
@@ -535,8 +535,6 @@ with tab2:
         st.success(f"✅ Generated {len(st.session_state.finance_df):,} transactions!")
     
     if st.session_state.finance_df is not None:
-        st.dataframe(st.session_state.finance_df.head(10), use_container_width=True)
-        csv = st.session_state.finance_df.to_csv(index=False)
         st.download_button(
             label="📥 Download Finance CSV",
             data=csv,
@@ -545,7 +543,7 @@ with tab2:
             key="download_finance"
         )
 
-elif page == "🤖 AI Insights":
+with tab3:
     st.header("🤖 AI-Powered Data Insights")
     
     if not st.session_state.gemini_api_key:
@@ -1444,3 +1442,4 @@ def generate_finance_data_df(rows):
             balance = 10000 + random.uniform(0, 5000)
     
     return pd.DataFrame(data, columns=['transaction_id', 'timestamp', 'account_id', 'transaction_type', 'amount', 'balance', 'currency', 'merchant'])
+
