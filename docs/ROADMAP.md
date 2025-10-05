@@ -163,7 +163,7 @@ Build the most intuitive, AI-powered business intelligence platform that empower
 8. **Real-time Data Streaming** - 69 votes
 
 ### Submit New Feature Requests
-Visit our [GitHub Discussions](https://github.com/ai-bi-dashboard/discussions) to:
+Visit our [GitHub Discussions](https://github.com/ShanikwaH/ai-bi-dashboard/discussions) to:
 - Vote on existing features
 - Submit new ideas
 - Discuss implementation approaches
@@ -218,7 +218,7 @@ We measure our progress with these metrics:
 ## Get Involved
 
 - 📧 Email: nikki.19972010@hotmail.com
-- 💬 Discussions: [GitHub Discussions](https://github.com/ai-bi-dashboard/discussions)
+- 💬 Discussions: [GitHub Discussions](https://github.com/ShanikwaH/ai-bi-dashboard/discussions)
 
 **Last Updated:** October 2025  
 **Next Review:** January 2026
