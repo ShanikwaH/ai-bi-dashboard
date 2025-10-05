@@ -416,7 +416,7 @@ if page == "🏠 Home":
 elif page == "📁 Data Upload":
     st.header("📁 Data Upload & Management")
     
-tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "🔧 Generate Data", "🤖 AI Insights"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "🔧 Generate Data", "🤖 AI Insights", "💬 AI Chat"])
     
 with tab1:
         uploaded_file = st.file_uploader(
@@ -598,7 +598,7 @@ with tab3:
             ):
                 st.success("Insights downloaded!")
 
-elif page == "💬 AI Chat Assistant":
+with tab4:
     st.header("💬 AI Chat Assistant")
     
     if not st.session_state.gemini_api_key:
@@ -1442,6 +1442,7 @@ def generate_finance_data_df(rows):
             balance = 10000 + random.uniform(0, 5000)
     
     return pd.DataFrame(data, columns=['transaction_id', 'timestamp', 'account_id', 'transaction_type', 'amount', 'balance', 'currency', 'merchant'])
+
 
 
 
