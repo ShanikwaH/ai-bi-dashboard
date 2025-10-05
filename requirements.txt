@@ -1,0 +1,7 @@
+streamlit==1.30.0
+pandas==2.1.0
+numpy==1.24.3
+plotly==5.17.0
+openpyxl==3.1.2
+google-generativeai==0.4.0  # ← Updated to latest
+python-dotenv==1.0.0

@@ -1,0 +1,43 @@
+# Environment Variables - DO NOT COMMIT!
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.pyc
+
+# Streamlit
+.streamlit/secrets.toml
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Data Files (if sensitive)
+data/
+*.csv
+*.xlsx
+uploads/
+
+# Logs
+*.log
+logs/
+
+# Testing
+test_env.py
+.pytest_cache/
