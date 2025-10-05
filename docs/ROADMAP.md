@@ -217,7 +217,7 @@ We measure our progress with these metrics:
 
 ## Get Involved
 
-- 📧 Email: mailto:roadmap@streamlit-bi.com
+- 📧 Email: roadmap@streamlit-bi.com
 - 💬 Discussions: [GitHub Discussions](https://github.com/ShanikwaH/ai-bi-dashboard/discussions)
 
 **Last Updated:** October 2025  
