@@ -77,7 +77,7 @@ Please include the following information:
 
 ### How We Communicate Security Issues
 
-- **Security Advisories:** [GitHub Security Advisories](https://github.com/ai-bi-dashboard/security/advisories)
+- **Security Advisories:** [GitHub Security Advisories](https://github.com/your-repo/security/advisories)
 - **Email Notifications:** Subscribe to security-announce@streamlit-bi.com
 - **RSS Feed:** https://streamlit-bi.com/security/feed.xml
 - **Status Page:** https://status.streamlit-bi.com
