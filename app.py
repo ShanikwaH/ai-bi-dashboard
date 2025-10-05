@@ -218,7 +218,7 @@ def generate_sample_data():
 @st.cache_data
 def load_data():
     "Load all CSV files from tests/data directory"
-    data_dir = Path(__file__).parent.parent / 'tests' / 'data'
+    data_dir = Path(__C:/Users/nikki/ai-bi-dashboard/tests/data__).parent.parent / 'tests' / 'data'
     
     sales_df = pd.read_csv(data_dir / 'sales_sample.csv')
     healthcare_df = pd.read_csv(data_dir / 'healthcare_sample.csv')
@@ -1234,4 +1234,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
