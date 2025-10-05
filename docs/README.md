@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-yellow)](https://ai.google.dev/)
 
-[Live Demo](https://your-app.streamlit.app) | [Documentation](#documentation) | [Features](#features) | [Installation](#installation)
+[Live Demo](https://ai-bi-dashboard.streamlit.app) | [Documentation](#documentation) | [Features](#features) | [Installation](#installation)
 
 ---
 
@@ -299,7 +299,7 @@ api_key = os.getenv('GEMINI_API_KEY')
 api_key = "hardcoded_key_here"
 ```
 
-See [SECURITY.md](docs/SECURITY.md) for details.
+See [SECURITY.md](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/SECURITY.md) for details.
 
 ---
 
@@ -381,7 +381,7 @@ Sample datasets included in `tests/data/`:
 
 ## 🤝 Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+We welcome contributions! See [CONTRIBUTING.md](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/CONTRIBUTING.md) for guidelines.
 
 ### Development Setup
 
@@ -432,7 +432,7 @@ See [Issues](https://github.com/ShanikwaH/ai-bi-dashboard/issues) for full list.
 - [ ] Custom plugins
 - [ ] White-label options
 
-See [ROADMAP.md](docs/ROADMAP.md) for detailed plans.
+See [ROADMAP.md](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/ROADMAP.md) for detailed plans.
 
 ---
 
@@ -481,9 +481,9 @@ Thanks to everyone who tested, provided feedback, and contributed!
 ## 📚 Additional Resources
 
 ### Tutorials
-- [Getting Started Guide](docs/GETTING_STARTED.md)
-- [AI Integration Tutorial](docs/AI_TUTORIAL.md)
-- [Forecasting Explained](docs/FORECASTING.md)
+- [Getting Started Guide](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/GETTING_STARTED.md)
+- [AI Integration Tutorial](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/AI_TUTORIAL.md)
+- [Forecasting Explained](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/FORECASTING.md)
 - [Video Walkthrough](https://youtube.com/watch?v=your-video)
 
 ### Blog Posts
