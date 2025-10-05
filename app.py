@@ -266,7 +266,7 @@ def exponential_smoothing_forecast(series, alpha=0.3, periods=30):
 
 # Sidebar
 with st.sidebar:
-    st.image("logo.png", use_container_width=True)
+    st.markdown("### 🤖 AI BI Dashboard")
     st.title("🤖 AI-Powered BI")
     
     # Gemini API Configuration
