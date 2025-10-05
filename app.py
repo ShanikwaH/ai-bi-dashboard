@@ -223,6 +223,101 @@ def generate_sample_data():
     
     return df
 
+def generate_sales_data_df(rows):
+    """Generate sales data as DataFrame"""
+    import random
+    
+    products = ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Headphones', 'Webcam', 'Desk', 'Chair']
+    categories = ['Electronics', 'Accessories', 'Furniture']
+    regions = ['North', 'South', 'East', 'West', 'Central']
+    
+    data = []
+    for i in range(1, rows + 1):
+        product = random.choice(products)
+        category = random.choice(categories)
+        quantity = random.randint(1, 10)
+        price = round(random.uniform(50, 1000), 2)
+        total = round(quantity * price, 2)
+        date = (datetime(2024, 1, 1) + timedelta(days=random.randint(0, 364))).strftime('%Y-%m-%d')
+        customer_id = f"CUST{random.randint(1, 5000):06d}"
+        region = random.choice(regions)
+        
+        data.append([i, date, product, category, quantity, price, total, customer_id, region])
+    
+    return pd.DataFrame(data, columns=['transaction_id', 'date', 'product', 'category', 'quantity', 'price', 'total', 'customer_id', 'region'])
+
+def generate_healthcare_data_df(rows):
+    """Generate healthcare data as DataFrame"""
+    import random
+    
+    diagnoses = ['Hypertension', 'Diabetes', 'Asthma', 'Arthritis', 'Pneumonia', 'Bronchitis', 'Fracture', 'Migraine']
+    genders = ['M', 'F', 'Other']
+    insurances = ['Medicare', 'Medicaid', 'Private', 'Uninsured']
+    
+    data = []
+    for i in range(1, rows + 1):
+        patient_id = f"PAT{i:08d}"
+        admission_date = datetime(2024, 1, 1) + timedelta(days=random.randint(0, 364))
+        treatment_days = random.randint(1, 14)
+        discharge_date = admission_date + timedelta(days=treatment_days)
+        diagnosis = random.choice(diagnoses)
+        age = random.randint(18, 98)
+        gender = random.choice(genders)
+        cost = round(random.uniform(1000, 50000), 2)
+        insurance = random.choice(insurances)
+        
+        data.append([
+            patient_id,
+            admission_date.strftime('%Y-%m-%d'),
+            discharge_date.strftime('%Y-%m-%d'),
+            diagnosis,
+            age,
+            gender,
+            treatment_days,
+            cost,
+            insurance
+        ])
+    
+    return pd.DataFrame(data, columns=['patient_id', 'admission_date', 'discharge_date', 'diagnosis', 'age', 'gender', 'treatment_days', 'cost', 'insurance'])
+
+def generate_finance_data_df(rows):
+    """Generate finance data as DataFrame"""
+    import random
+    
+    types = ['Debit', 'Credit', 'Transfer', 'ATM', 'Payment']
+    currencies = ['USD', 'EUR', 'GBP', 'JPY']
+    merchants = ['Amazon', 'Walmart', 'Target', 'Starbucks', 'Shell', 'Restaurant', 'Online Store', 'Grocery']
+    
+    balance = 10000.0
+    data = []
+    
+    for i in range(1, rows + 1):
+        txn_id = f"TXN{i:010d}"
+        timestamp = (datetime(2024, 1, 1) + timedelta(
+            days=random.randint(0, 364),
+            hours=random.randint(0, 23),
+            minutes=random.randint(0, 59),
+            seconds=random.randint(0, 59)
+        )).isoformat()
+        account_id = f"ACC{random.randint(1, 10000):08d}"
+        txn_type = random.choice(types)
+        amount = round(random.uniform(10, 2000), 2)
+        
+        if txn_type in ['Debit', 'ATM', 'Payment']:
+            balance -= amount
+        else:
+            balance += amount
+        
+        currency = random.choice(currencies)
+        merchant = random.choice(merchants)
+        
+        data.append([txn_id, timestamp, account_id, txn_type, amount, round(balance, 2), currency, merchant])
+        
+        if i % 10000 == 0:
+            balance = 10000 + random.uniform(0, 5000)
+    
+    return pd.DataFrame(data, columns=['transaction_id', 'timestamp', 'account_id', 'transaction_type', 'amount', 'balance', 'currency', 'merchant'])
+
 def calculate_kpis(df, date_col, value_col):
     """Calculate key performance indicators"""
     df_sorted = df.sort_values(date_col)
@@ -411,13 +506,97 @@ elif page == "📁 Data Upload":
             except Exception as e:
                 st.error(f"Error loading file: {str(e)}")
     
-    with tab2:
-        if st.button("Generate Sample Sales Data", type="primary"):
-            st.session_state.df = generate_sample_data()
-            st.success("✅ Sample data generated successfully!")
-            st.dataframe(st.session_state.df.head(10), width='stretch')
-            
-            st.info("This sample dataset contains daily sales data with revenue, units sold, regions, product categories, and customer satisfaction scores.")
+with tab2:
+        st.subheader("Generate Sample Data")
+        
+        # Initialize session state
+        if 'sales_df_sample' not in st.session_state:
+            st.session_state.sales_df_sample = None
+        if 'healthcare_df_sample' not in st.session_state:
+            st.session_state.healthcare_df_sample = None
+        if 'finance_df_sample' not in st.session_state:
+            st.session_state.finance_df_sample = None
+        
+        # === SALES DATA ===
+        st.markdown("### 💼 Sales Sample Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Sales transactions with products, prices, and regional data")
+        with col2:
+            sales_rows = st.number_input("Rows", min_value=100, max_value=50000, value=10000, step=1000, key="sales_sample_rows")
+        
+        if st.button("Generate Sales Data", type="primary", key="gen_sales_sample"):
+            with st.spinner("Generating sales data..."):
+                st.session_state.sales_df_sample = generate_sales_data_df(sales_rows)
+                st.session_state.df = st.session_state.sales_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.sales_df_sample):,} sales records!")
+        
+        if st.session_state.sales_df_sample is not None:
+            st.dataframe(st.session_state.sales_df_sample.head(10), use_container_width=True)
+            csv = st.session_state.sales_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Sales CSV",
+                data=csv,
+                file_name="sales_sample.csv",
+                mime="text/csv",
+                key="download_sales_sample"
+            )
+        
+        st.markdown("---")
+        
+        # === HEALTHCARE DATA ===
+        st.markdown("### 🏥 Healthcare Sample Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Patient records with diagnoses, treatments, and insurance")
+        with col2:
+            healthcare_rows = st.number_input("Rows", min_value=100, max_value=100000, value=10000, step=5000, key="healthcare_sample_rows")
+        
+        if st.button("Generate Healthcare Data", type="primary", key="gen_healthcare_sample"):
+            with st.spinner("Generating healthcare data..."):
+                st.session_state.healthcare_df_sample = generate_healthcare_data_df(healthcare_rows)
+                st.session_state.df = st.session_state.healthcare_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.healthcare_df_sample):,} patient records!")
+        
+        if st.session_state.healthcare_df_sample is not None:
+            st.dataframe(st.session_state.healthcare_df_sample.head(10), use_container_width=True)
+            csv = st.session_state.healthcare_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Healthcare CSV",
+                data=csv,
+                file_name="healthcare_sample.csv",
+                mime="text/csv",
+                key="download_healthcare_sample"
+            )
+        
+        st.markdown("---")
+        
+        # === FINANCE DATA ===
+        st.markdown("### 💳 Finance Sample Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Financial transactions with accounts, merchants, and balances")
+        with col2:
+            finance_rows = st.number_input("Rows", min_value=100, max_value=100000, value=10000, step=5000, key="finance_sample_rows")
+        
+        if st.button("Generate Finance Data", type="primary", key="gen_finance_sample"):
+            with st.spinner("Generating finance data..."):
+                st.session_state.finance_df_sample = generate_finance_data_df(finance_rows)
+                st.session_state.df = st.session_state.finance_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.finance_df_sample):,} transactions!")
+        
+        if st.session_state.finance_df_sample is not None:
+            st.dataframe(st.session_state.finance_df_sample.head(10), use_container_width=True)
+            csv = st.session_state.finance_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Finance CSV",
+                data=csv,
+                file_name="finance_sample.csv",
+                mime="text/csv",
+                key="download_finance_sample"
+            )
+        
+        st.info("💡 **Tip:** Download these files and place them in `tests/data/` for permanent use")
 
 elif page == "🤖 AI Insights":
     st.header("🤖 AI-Powered Data Insights")
@@ -1218,3 +1397,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
