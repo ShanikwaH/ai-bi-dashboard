@@ -266,7 +266,7 @@ def exponential_smoothing_forecast(series, alpha=0.3, periods=30):
 
 # Sidebar
 with st.sidebar:
-    st.image("https://via.placeholder.com/150x50/4285f4/ffffff?text=AI+BI+Dashboard", use_container_width=True)
+    st.image("logo.png", use_container_width=True)
     st.title("🤖 AI-Powered BI")
     
     # Gemini API Configuration
@@ -275,7 +275,7 @@ with st.sidebar:
             "Enter Gemini API Key",
             type="password",
             value=st.session_state.gemini_api_key if st.session_state.gemini_api_key else "",
-            help="Get your API key from https://aistudio.google.com/welcome"
+            help="Get your API key from https://makersuite.google.com/app/apikey"
         )
         
         model_choice = st.selectbox(
@@ -1217,6 +1217,4 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True
-
 )
-
