@@ -1,6 +1,19 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
+import io
+import google.generativeai as genai
+import json
+import os
+from dotenv import load_dotenv
 
-# CRITICAL: Page config MUST be first Streamlit command
+# Load environment variables
+load_dotenv()
+
+# Page configuration
 st.set_page_config(
     page_title="AI-Powered Business Intelligence Dashboard",
     page_icon="🤖",
@@ -8,27 +21,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Now import everything else
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import io
-import json
-
-# Graceful Gemini import
-try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
-except ImportError:
-    GENAI_AVAILABLE = False
-    genai = None
-    # Don't use st.error here - it crashes on import!
-    
-    api_key = st.text_input(
-        "Enter Gemini API Key",
-        ...
 # Custom CSS
 st.markdown("""
     <style>
@@ -72,37 +64,59 @@ st.markdown("""
 if 'df' not in st.session_state:
     st.session_state.df = None
 if 'gemini_api_key' not in st.session_state:
-    st.session_state.gemini_api_key = None
+    # Try to get API key from environment variables
+    st.session_state.gemini_api_key = os.getenv('GEMINI_API_KEY')
 if 'gemini_model' not in st.session_state:
     st.session_state.gemini_model = None
 if 'model_name' not in st.session_state:
-    st.session_state.model_name = None
+    st.session_state.model_name = 'gemini-1.5-flash'  # Set default model
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
 # Configure Gemini AI
 def configure_gemini(api_key, model_name='gemini-1.5-flash'):
     """Configure Gemini AI with API key"""
+    if not api_key:
+        st.error("Please provide a Gemini API key.")
+        st.info("You can set it in the .env file or in Streamlit Cloud secrets.")
+        return None
+        
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(model_name)
         
-        # Test the connection
-        test = model.generate_content("Hello")
-        
-        return model
+        # Test the connection with a timeout
+        try:
+            test = model.generate_content("Hello")
+            return model
+        except Exception as e:
+            if "quota" in str(e).lower():
+                st.error("API quota exceeded. Please check your billing settings.")
+            elif "permission" in str(e).lower():
+                st.error("API key doesn't have proper permissions. Please check your API key settings.")
+            else:
+                st.error(f"Error testing connection: {str(e)}")
+            st.info("Try: 1) Check API key, 2) Enable billing, 3) Use gemini-1.5-flash")
+            return None
+            
     except Exception as e:
-        st.error(f"Error: {str(e)}")
-        st.info("Try: 1) Check API key, 2) Enable billing, 3) Use gemini-1.5-flash")
+        st.error(f"Error configuring Gemini: {str(e)}")
+        st.info("Please make sure you have a valid API key and the service is available.")
         return None
 
 # Generate AI insights
 def generate_ai_insights(df, question=None):
     """Generate insights using Gemini AI"""
+    if df is None:
+        return "Please upload a dataset first."
+        
     if st.session_state.gemini_model is None:
         return "Please configure Gemini API key first."
     
     try:
+        if df.empty:
+            return "The uploaded dataset is empty. Please check your data."
+            
         # Prepare data summary for AI
         summary = f"""
         Dataset Overview:
@@ -377,15 +391,10 @@ with st.sidebar:
     st.markdown("### 🤖 AI BI Dashboard")
     st.title("🤖 AI-Powered BI")
     
-# Gemini API Configuration
-with st.expander("⚙️ Configure Gemini AI", expanded=not st.session_state.gemini_api_key):
-    if not GENAI_AVAILABLE:
-        st.error("⚠️ Google Generative AI is not installed. Please add it to requirements.txt")
-        st.stop()
-    
-    api_key = st.text_input(
-        "Enter Gemini API Key",
-        ...
+    # Gemini API Configuration
+    with st.expander("⚙️ Configure Gemini AI", expanded=not st.session_state.gemini_api_key):
+        api_key = st.text_input(
+            "Enter Gemini API Key",
             type="password",
             value=st.session_state.gemini_api_key if st.session_state.gemini_api_key else "",
             help="Get your API key from https://aistudio.google.com/welcome"
@@ -502,7 +511,7 @@ elif page == "📁 Data Upload":
                 st.success(f"✅ File uploaded successfully! Loaded {len(df)} rows and {len(df.columns)} columns.")
                 
                 st.subheader("Data Preview")
-                st.dataframe(df.head(10), use_container_width=True)
+                st.dataframe(df.head(10), width='stretch')
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -639,7 +648,7 @@ elif page == "🤖 AI Insights":
             )
         
         with col2:
-            if st.button("🤖 Generate AI Insights", type="primary", use_container_width=True):
+            if st.button("🤖 Generate AI Insights", type="primary", width='stretch'):
                 with st.spinner("AI is analyzing your data... This may take a moment."):
                     
                     if analysis_type == "Comprehensive Overview":
@@ -705,7 +714,7 @@ elif page == "💬 AI Chat Assistant":
             )
         
         with col2:
-            send_button = st.button("Send", type="primary", use_container_width=True)
+            send_button = st.button("Send", type="primary", width='stretch')
         
         if send_button and user_question:
             # Add user message to history
@@ -758,11 +767,11 @@ elif page == "🔍 Exploratory Analysis":
                 'Unique Values': [df[col].nunique() for col in df.columns]
             })
             
-            st.dataframe(col_info, use_container_width=True)
+            st.dataframe(col_info, width='stretch')
             
             st.markdown("---")
             st.subheader("Data Sample")
-            st.dataframe(df.head(20), use_container_width=True)
+            st.dataframe(df.head(20), width='stretch')
         
         with tab2:
             st.subheader("Statistical Summary")
@@ -770,7 +779,7 @@ elif page == "🔍 Exploratory Analysis":
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             
             if numeric_cols:
-                st.dataframe(df[numeric_cols].describe(), use_container_width=True)
+                st.dataframe(df[numeric_cols].describe(), width='stretch')
                 
                 st.markdown("---")
                 st.subheader("Distribution Analysis")
@@ -810,7 +819,7 @@ elif page == "🔍 Exploratory Analysis":
             
             if len(quality_df) > 0:
                 st.warning(f"Found {len(quality_df)} columns with missing values")
-                st.dataframe(quality_df, use_container_width=True)
+                st.dataframe(quality_df, width='stretch')
                 
                 fig = px.bar(quality_df, x='Column', y='Missing %',
                            title="Missing Values by Column (%)",
@@ -931,7 +940,7 @@ elif page == "📈 Visualizations":
                         })
                 
                 corr_df = pd.DataFrame(corr_pairs).sort_values('Correlation', key=abs, ascending=False).head(10)
-                st.dataframe(corr_df, use_container_width=True)
+                st.dataframe(corr_df, width='stretch')
             else:
                 st.info("Need at least 2 numeric columns for correlation analysis.")
         
@@ -951,7 +960,7 @@ elif page == "📈 Visualizations":
                                color_continuous_scale='Viridis')
                     st.plotly_chart(fig, use_container_width=True)
                     
-                    st.dataframe(grouped, use_container_width=True)
+                    st.dataframe(grouped, width='stretch')
                 else:
                     st.info("No numeric columns available for geographic analysis.")
             else:
@@ -1081,7 +1090,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        if st.button("Interpret Moving Average Forecast", use_container_width=True, key="interpret_ma"):
+                        if st.button("Interpret Moving Average Forecast", width='stretch', key="interpret_ma"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['ma_forecast'], "Moving Average")
@@ -1096,7 +1105,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                             st.markdown("</div>", unsafe_allow_html=True)
                     
                     with col2:
-                        if st.button("Interpret Exponential Smoothing Forecast", use_container_width=True, key="interpret_es"):
+                        if st.button("Interpret Exponential Smoothing Forecast", width='stretch', key="interpret_es"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['es_forecast'], "Exponential Smoothing")
@@ -1112,7 +1121,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                 
                 # Display forecast table
                 st.subheader("Forecast Data")
-                st.dataframe(fdata['forecast_df'], use_container_width=True)
+                st.dataframe(fdata['forecast_df'], width='stretch')
                 
                 # Clear forecast button
                 st.markdown("---")
@@ -1153,7 +1162,7 @@ elif page == "📊 Statistical Analysis":
                     stats_df['skewness'] = df[selected_cols].skew()
                     stats_df['kurtosis'] = df[selected_cols].kurtosis()
                     
-                    st.dataframe(stats_df, use_container_width=True)
+                    st.dataframe(stats_df, width='stretch')
                     
                     for col in selected_cols:
                         fig = px.histogram(df, x=col, marginal="box",
@@ -1252,7 +1261,7 @@ elif page == "📊 Statistical Analysis":
                 
                 if len(outliers) > 0:
                     st.subheader("Outlier Data")
-                    st.dataframe(outliers, use_container_width=True)
+                    st.dataframe(outliers, width='stretch')
             else:
                 st.info("No numeric columns found for outlier detection.")
 
@@ -1281,7 +1290,7 @@ elif page == "📄 AI Report Generator":
             include_charts = st.checkbox("Include Key Metrics", value=True)
         
         with col3:
-            if st.button("🤖 Generate AI Report", type="primary", use_container_width=True):
+            if st.button("🤖 Generate AI Report", type="primary", width='stretch'):
                 with st.spinner("AI is generating your comprehensive report... This may take a minute."):
                     report = generate_automated_report(df)
                     st.session_state.generated_report = report
@@ -1321,7 +1330,7 @@ elif page == "📄 AI Report Generator":
                     data=st.session_state.generated_report,
                     file_name=f"ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    use_container_width=True
+                    width='stretch'
                 )
             
             with col2:
@@ -1347,7 +1356,7 @@ Generated by AI-Powered BI Dashboard
                     data=full_report,
                     file_name=f"full_ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    use_container_width=True
+                    width='stretch'
                 )
 
 elif page == "📥 Export":
@@ -1403,7 +1412,7 @@ elif page == "📥 Export":
         
         st.markdown("---")
         st.subheader("Data Preview")
-        st.dataframe(df.head(10), use_container_width=True)
+        st.dataframe(df.head(10), width='stretch')
 
 # Footer
 st.markdown("---")
@@ -1415,4 +1424,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
