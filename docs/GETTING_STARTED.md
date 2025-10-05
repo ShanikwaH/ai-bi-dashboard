@@ -62,7 +62,7 @@ pip install -r requirements.txt
 
 ### Method 2: Download ZIP
 
-1. Download the ZIP file from [GitHub](https://github.com/your-repo)
+1. Download the ZIP file from [GitHub](https://github.com/ShanikwaH/ai-bi-dashboard/tree/main)
 2. Extract to your desired location
 3. Open terminal/command prompt in the extracted folder
 4. Follow steps 3-6 from Method 1
