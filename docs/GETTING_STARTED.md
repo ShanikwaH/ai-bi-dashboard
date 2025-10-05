@@ -19,7 +19,7 @@ Welcome! This guide will help you set up and start using the AI-Powered Streamli
 Before you begin, ensure you have:
 
 ### Required
-- **Python 3.9 or higher** - [Download Python](https://www.python.org/downloads/)
+- **Python 3.11 or higher** - [Download Python](https://www.python.org/downloads/)
 - **pip** (Python package installer) - Usually comes with Python
 - **Basic understanding of CSV/Excel files**
 
@@ -334,7 +334,7 @@ If you're still stuck:
 1. **Check Documentation**: See `/docs` folder
 2. **GitHub Issues**: Search existing issues
 3. **Discussions**: Ask the community
-4. **Email Support**: nikki.19972010@hotmail.com
+4. **Email Support**: mailto:support@streamlit-bi.com
 
 ---
 
@@ -342,8 +342,8 @@ If you're still stuck:
 
 ### Beginner Track
 1. ✅ Complete this getting started guide
-2. 📖 Read [AI_TUTORIAL.md](./AI_TUTORIAL.md) for AI features
-3. 📊 Explore [FORECASTING.md](./FORECASTING.md) for predictions
+2. 📖 Read [AI_TUTORIAL.md](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/AI_TUTORIAL.md) for AI features
+3. 📊 Explore [FORECASTING.md](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/FORECASTING.md) for predictions
 4. 🎬 Watch our [YouTube tutorials](https://youtube.com/streamlitbi)
 
 ### Intermediate Track
@@ -353,7 +353,7 @@ If you're still stuck:
 4. 🤖 Train custom ML models
 
 ### Advanced Track
-1. 🏗️ Contribute to the project (see [CONTRIBUTING.md](./CONTRIBUTING.md))
+1. 🏗️ Contribute to the project (see [CONTRIBUTING.md](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/CONTRIBUTING.md))
 2. 🔧 Extend with custom components
 3. 🚀 Deploy to production
 4. 🌐 Integrate with APIs
@@ -371,9 +371,9 @@ If you're still stuck:
 - [Data Visualization Best Practices](https://blog.streamlit-bi.com)
 
 #### Documentation
-- [API Reference](./docs/api_reference.md)
-- [Configuration Guide](./docs/configuration.md)
-- [Deployment Guide](./docs/deployment.md)
+- [API Reference](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/API.md)
+- [Configuration Guide](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/CONFIGURATION.md)
+- [Deployment Guide](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/DEPLOYMENT.md)
 
 ---
 
@@ -432,6 +432,6 @@ streamlit-bi-dashboard/
 ---
 
 **Need Help?** Join our community:
-- 💬 [Discussions](https://github.com/ai-bi-dashboard/discussions)
-- 🐛 [Report Issues](https://github.com/ai-bi-dashboard/issues)
-- 📧 [Email](mailto:nikki.19972010@hotmail.com)
+- 💬 [Discussions](https://github.com/ShanikwaH/ai-bi-dashboard/discussions)
+- 🐛 [Report Issues](https://github.com/ShanikwaH/ai-bi-dashboard/issues)
+- 📧 [Email](mailto:support@streamlit-bi.com)
