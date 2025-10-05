@@ -223,6 +223,101 @@ def generate_sample_data():
     
     return df
 
+def generate_sales_data_df(rows):
+    """Generate sales data as DataFrame"""
+    import random
+    
+    products = ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Headphones', 'Webcam', 'Desk', 'Chair']
+    categories = ['Electronics', 'Accessories', 'Furniture']
+    regions = ['North', 'South', 'East', 'West', 'Central']
+    
+    data = []
+    for i in range(1, rows + 1):
+        product = random.choice(products)
+        category = random.choice(categories)
+        quantity = random.randint(1, 10)
+        price = round(random.uniform(50, 1000), 2)
+        total = round(quantity * price, 2)
+        date = (datetime(2024, 1, 1) + timedelta(days=random.randint(0, 364))).strftime('%Y-%m-%d')
+        customer_id = f"CUST{random.randint(1, 5000):06d}"
+        region = random.choice(regions)
+        
+        data.append([i, date, product, category, quantity, price, total, customer_id, region])
+    
+    return pd.DataFrame(data, columns=['transaction_id', 'date', 'product', 'category', 'quantity', 'price', 'total', 'customer_id', 'region'])
+
+def generate_healthcare_data_df(rows):
+    """Generate healthcare data as DataFrame"""
+    import random
+    
+    diagnoses = ['Hypertension', 'Diabetes', 'Asthma', 'Arthritis', 'Pneumonia', 'Bronchitis', 'Fracture', 'Migraine']
+    genders = ['M', 'F', 'Other']
+    insurances = ['Medicare', 'Medicaid', 'Private', 'Uninsured']
+    
+    data = []
+    for i in range(1, rows + 1):
+        patient_id = f"PAT{i:08d}"
+        admission_date = datetime(2024, 1, 1) + timedelta(days=random.randint(0, 364))
+        treatment_days = random.randint(1, 14)
+        discharge_date = admission_date + timedelta(days=treatment_days)
+        diagnosis = random.choice(diagnoses)
+        age = random.randint(18, 98)
+        gender = random.choice(genders)
+        cost = round(random.uniform(1000, 50000), 2)
+        insurance = random.choice(insurances)
+        
+        data.append([
+            patient_id,
+            admission_date.strftime('%Y-%m-%d'),
+            discharge_date.strftime('%Y-%m-%d'),
+            diagnosis,
+            age,
+            gender,
+            treatment_days,
+            cost,
+            insurance
+        ])
+    
+    return pd.DataFrame(data, columns=['patient_id', 'admission_date', 'discharge_date', 'diagnosis', 'age', 'gender', 'treatment_days', 'cost', 'insurance'])
+
+def generate_finance_data_df(rows):
+    """Generate finance data as DataFrame"""
+    import random
+    
+    types = ['Debit', 'Credit', 'Transfer', 'ATM', 'Payment']
+    currencies = ['USD', 'EUR', 'GBP', 'JPY']
+    merchants = ['Amazon', 'Walmart', 'Target', 'Starbucks', 'Shell', 'Restaurant', 'Online Store', 'Grocery']
+    
+    balance = 10000.0
+    data = []
+    
+    for i in range(1, rows + 1):
+        txn_id = f"TXN{i:010d}"
+        timestamp = (datetime(2024, 1, 1) + timedelta(
+            days=random.randint(0, 364),
+            hours=random.randint(0, 23),
+            minutes=random.randint(0, 59),
+            seconds=random.randint(0, 59)
+        )).isoformat()
+        account_id = f"ACC{random.randint(1, 10000):08d}"
+        txn_type = random.choice(types)
+        amount = round(random.uniform(10, 2000), 2)
+        
+        if txn_type in ['Debit', 'ATM', 'Payment']:
+            balance -= amount
+        else:
+            balance += amount
+        
+        currency = random.choice(currencies)
+        merchant = random.choice(merchants)
+        
+        data.append([txn_id, timestamp, account_id, txn_type, amount, round(balance, 2), currency, merchant])
+        
+        if i % 10000 == 0:
+            balance = 10000 + random.uniform(0, 5000)
+    
+    return pd.DataFrame(data, columns=['transaction_id', 'timestamp', 'account_id', 'transaction_type', 'amount', 'balance', 'currency', 'merchant'])
+
 def calculate_kpis(df, date_col, value_col):
     """Calculate key performance indicators"""
     df_sorted = df.sort_values(date_col)
@@ -266,7 +361,7 @@ def exponential_smoothing_forecast(series, alpha=0.3, periods=30):
 
 # Sidebar
 with st.sidebar:
-    st.image("https://via.placeholder.com/150x50/4285f4/ffffff?text=AI+BI+Dashboard", use_container_width=True)
+    st.markdown("### 🤖 AI BI Dashboard")
     st.title("🤖 AI-Powered BI")
     
     # Gemini API Configuration
@@ -275,7 +370,7 @@ with st.sidebar:
             "Enter Gemini API Key",
             type="password",
             value=st.session_state.gemini_api_key if st.session_state.gemini_api_key else "",
-            help="Get your API key from https://makersuite.google.com/app/apikey"
+            help="Get your API key from https://aistudio.google.com/welcome"
         )
         
         model_choice = st.selectbox(
@@ -389,7 +484,7 @@ elif page == "📁 Data Upload":
                 st.success(f"✅ File uploaded successfully! Loaded {len(df)} rows and {len(df.columns)} columns.")
                 
                 st.subheader("Data Preview")
-                st.dataframe(df.head(10), use_container_width=True)
+                st.dataframe(df.head(10), width='stretch')
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -412,12 +507,96 @@ elif page == "📁 Data Upload":
                 st.error(f"Error loading file: {str(e)}")
     
     with tab2:
-        if st.button("Generate Sample Sales Data", type="primary"):
-            st.session_state.df = generate_sample_data()
-            st.success("✅ Sample data generated successfully!")
-            st.dataframe(st.session_state.df.head(10), use_container_width=True)
-            
-            st.info("This sample dataset contains daily sales data with revenue, units sold, regions, product categories, and customer satisfaction scores.")
+        st.subheader("Generate Sample Data")
+        
+        # Initialize session state
+        if 'sales_df_sample' not in st.session_state:
+            st.session_state.sales_df_sample = None
+        if 'healthcare_df_sample' not in st.session_state:
+            st.session_state.healthcare_df_sample = None
+        if 'finance_df_sample' not in st.session_state:
+            st.session_state.finance_df_sample = None
+        
+        # === SALES DATA ===
+        st.markdown("### 💼 Sales Sample Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Sales transactions with products, prices, and regional data")
+        with col2:
+            sales_rows = st.number_input("Rows", min_value=100, max_value=50000, value=10000, step=1000, key="sales_sample_rows")
+        
+        if st.button("Generate Sales Data", type="primary", key="gen_sales_sample"):
+            with st.spinner("Generating sales data..."):
+                st.session_state.sales_df_sample = generate_sales_data_df(sales_rows)
+                st.session_state.df = st.session_state.sales_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.sales_df_sample):,} sales records!")
+        
+        if st.session_state.sales_df_sample is not None:
+            st.dataframe(st.session_state.sales_df_sample.head(10), use_container_width=True)
+            csv = st.session_state.sales_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Sales CSV",
+                data=csv,
+                file_name="sales_sample.csv",
+                mime="text/csv",
+                key="download_sales_sample"
+            )
+        
+        st.markdown("---")
+        
+        # === HEALTHCARE DATA ===
+        st.markdown("### 🏥 Healthcare Sample Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Patient records with diagnoses, treatments, and insurance")
+        with col2:
+            healthcare_rows = st.number_input("Rows", min_value=100, max_value=100000, value=10000, step=5000, key="healthcare_sample_rows")
+        
+        if st.button("Generate Healthcare Data", type="primary", key="gen_healthcare_sample"):
+            with st.spinner("Generating healthcare data..."):
+                st.session_state.healthcare_df_sample = generate_healthcare_data_df(healthcare_rows)
+                st.session_state.df = st.session_state.healthcare_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.healthcare_df_sample):,} patient records!")
+        
+        if st.session_state.healthcare_df_sample is not None:
+            st.dataframe(st.session_state.healthcare_df_sample.head(10), use_container_width=True)
+            csv = st.session_state.healthcare_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Healthcare CSV",
+                data=csv,
+                file_name="healthcare_sample.csv",
+                mime="text/csv",
+                key="download_healthcare_sample"
+            )
+        
+        st.markdown("---")
+        
+        # === FINANCE DATA ===
+        st.markdown("### 💳 Finance Sample Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Financial transactions with accounts, merchants, and balances")
+        with col2:
+            finance_rows = st.number_input("Rows", min_value=100, max_value=100000, value=10000, step=5000, key="finance_sample_rows")
+        
+        if st.button("Generate Finance Data", type="primary", key="gen_finance_sample"):
+            with st.spinner("Generating finance data..."):
+                st.session_state.finance_df_sample = generate_finance_data_df(finance_rows)
+                st.session_state.df = st.session_state.finance_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.finance_df_sample):,} transactions!")
+        
+        if st.session_state.finance_df_sample is not None:
+            st.dataframe(st.session_state.finance_df_sample.head(10), use_container_width=True)
+            csv = st.session_state.finance_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Finance CSV",
+                data=csv,
+                file_name="finance_sample.csv",
+                mime="text/csv",
+                key="download_finance_sample"
+            )
+        
+        st.info("💡 **Tip:** Download these files and place them in `tests/data/` for permanent use")
 
 elif page == "🤖 AI Insights":
     st.header("🤖 AI-Powered Data Insights")
@@ -442,7 +621,7 @@ elif page == "🤖 AI Insights":
             )
         
         with col2:
-            if st.button("🤖 Generate AI Insights", type="primary", use_container_width=True):
+            if st.button("🤖 Generate AI Insights", type="primary", width='stretch'):
                 with st.spinner("AI is analyzing your data... This may take a moment."):
                     
                     if analysis_type == "Comprehensive Overview":
@@ -508,7 +687,7 @@ elif page == "💬 AI Chat Assistant":
             )
         
         with col2:
-            send_button = st.button("Send", type="primary", use_container_width=True)
+            send_button = st.button("Send", type="primary", width='stretch')
         
         if send_button and user_question:
             # Add user message to history
@@ -561,11 +740,11 @@ elif page == "🔍 Exploratory Analysis":
                 'Unique Values': [df[col].nunique() for col in df.columns]
             })
             
-            st.dataframe(col_info, use_container_width=True)
+            st.dataframe(col_info, width='stretch')
             
             st.markdown("---")
             st.subheader("Data Sample")
-            st.dataframe(df.head(20), use_container_width=True)
+            st.dataframe(df.head(20), width='stretch')
         
         with tab2:
             st.subheader("Statistical Summary")
@@ -573,7 +752,7 @@ elif page == "🔍 Exploratory Analysis":
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             
             if numeric_cols:
-                st.dataframe(df[numeric_cols].describe(), use_container_width=True)
+                st.dataframe(df[numeric_cols].describe(), width='stretch')
                 
                 st.markdown("---")
                 st.subheader("Distribution Analysis")
@@ -613,7 +792,7 @@ elif page == "🔍 Exploratory Analysis":
             
             if len(quality_df) > 0:
                 st.warning(f"Found {len(quality_df)} columns with missing values")
-                st.dataframe(quality_df, use_container_width=True)
+                st.dataframe(quality_df, width='stretch')
                 
                 fig = px.bar(quality_df, x='Column', y='Missing %',
                            title="Missing Values by Column (%)",
@@ -734,7 +913,7 @@ elif page == "📈 Visualizations":
                         })
                 
                 corr_df = pd.DataFrame(corr_pairs).sort_values('Correlation', key=abs, ascending=False).head(10)
-                st.dataframe(corr_df, use_container_width=True)
+                st.dataframe(corr_df, width='stretch')
             else:
                 st.info("Need at least 2 numeric columns for correlation analysis.")
         
@@ -754,7 +933,7 @@ elif page == "📈 Visualizations":
                                color_continuous_scale='Viridis')
                     st.plotly_chart(fig, use_container_width=True)
                     
-                    st.dataframe(grouped, use_container_width=True)
+                    st.dataframe(grouped, width='stretch')
                 else:
                     st.info("No numeric columns available for geographic analysis.")
             else:
@@ -884,7 +1063,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        if st.button("Interpret Moving Average Forecast", use_container_width=True, key="interpret_ma"):
+                        if st.button("Interpret Moving Average Forecast", width='stretch', key="interpret_ma"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['ma_forecast'], "Moving Average")
@@ -899,7 +1078,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                             st.markdown("</div>", unsafe_allow_html=True)
                     
                     with col2:
-                        if st.button("Interpret Exponential Smoothing Forecast", use_container_width=True, key="interpret_es"):
+                        if st.button("Interpret Exponential Smoothing Forecast", width='stretch', key="interpret_es"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['es_forecast'], "Exponential Smoothing")
@@ -915,7 +1094,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                 
                 # Display forecast table
                 st.subheader("Forecast Data")
-                st.dataframe(fdata['forecast_df'], use_container_width=True)
+                st.dataframe(fdata['forecast_df'], width='stretch')
                 
                 # Clear forecast button
                 st.markdown("---")
@@ -956,7 +1135,7 @@ elif page == "📊 Statistical Analysis":
                     stats_df['skewness'] = df[selected_cols].skew()
                     stats_df['kurtosis'] = df[selected_cols].kurtosis()
                     
-                    st.dataframe(stats_df, use_container_width=True)
+                    st.dataframe(stats_df, width='stretch')
                     
                     for col in selected_cols:
                         fig = px.histogram(df, x=col, marginal="box",
@@ -1055,7 +1234,7 @@ elif page == "📊 Statistical Analysis":
                 
                 if len(outliers) > 0:
                     st.subheader("Outlier Data")
-                    st.dataframe(outliers, use_container_width=True)
+                    st.dataframe(outliers, width='stretch')
             else:
                 st.info("No numeric columns found for outlier detection.")
 
@@ -1084,7 +1263,7 @@ elif page == "📄 AI Report Generator":
             include_charts = st.checkbox("Include Key Metrics", value=True)
         
         with col3:
-            if st.button("🤖 Generate AI Report", type="primary", use_container_width=True):
+            if st.button("🤖 Generate AI Report", type="primary", width='stretch'):
                 with st.spinner("AI is generating your comprehensive report... This may take a minute."):
                     report = generate_automated_report(df)
                     st.session_state.generated_report = report
@@ -1124,7 +1303,7 @@ elif page == "📄 AI Report Generator":
                     data=st.session_state.generated_report,
                     file_name=f"ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    use_container_width=True
+                    width='stretch'
                 )
             
             with col2:
@@ -1150,7 +1329,7 @@ Generated by AI-Powered BI Dashboard
                     data=full_report,
                     file_name=f"full_ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    use_container_width=True
+                    width='stretch'
                 )
 
 elif page == "📥 Export":
@@ -1206,14 +1385,14 @@ elif page == "📥 Export":
         
         st.markdown("---")
         st.subheader("Data Preview")
-        st.dataframe(df.head(10), use_container_width=True)
+        st.dataframe(df.head(10), width='stretch')
 
 # Footer
 st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center; color: #666;'>
-        <p>🤖 AI-Powered Business Intelligence Dashboard | Built with Streamlit & Google Gemini | © 2024</p>
+        <p>🤖 AI-Powered Business Intelligence Dashboard | Built with Streamlit & Google Gemini | © 2025</p>
     </div>
     """,
     unsafe_allow_html=True
