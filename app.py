@@ -416,9 +416,9 @@ if page == "🏠 Home":
 elif page == "📁 Data Upload":
     st.header("📁 Data Upload & Management")
     
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "🔧 Generate Data", "🤖 AI Insights", "💬 AI Chat"])
+    tab1, tab2 = st.tabs(["Upload Data", "Use Sample Data"])
     
-with tab1:
+    with tab1:
         uploaded_file = st.file_uploader(
             "Upload your CSV or Excel file",
             type=['csv', 'xlsx', 'xls'],
@@ -458,92 +458,15 @@ with tab1:
             except Exception as e:
                 st.error(f"Error loading file: {str(e)}")
     
-with tab2:
-    st.subheader("🔧 Generate Test Data")
-    st.markdown("Generate and download sample CSV files for testing")
-    
-    # Initialize session state for each dataset
-    if 'sales_df' not in st.session_state:
-        st.session_state.sales_df = None
-    if 'healthcare_df' not in st.session_state:
-        st.session_state.healthcare_df = None
-    if 'finance_df' not in st.session_state:
-        st.session_state.finance_df = None
-    
-    # === SALES DATA ===
-    st.markdown("---")
-    st.markdown("### 💼 Sales Sample Data")
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.write("Generate sales transaction data with products, prices, and regions")
-    with col2:
-        sales_rows = st.number_input("Rows", min_value=100, max_value=50000, value=10000, step=1000, key="sales_rows")
-    
-    if st.button("Generate Sample Sales Data", type="primary", key="gen_sales"):
-        with st.spinner("Generating sales data..."):
-            st.session_state.sales_df = generate_sales_data_df(sales_rows)
-        st.success(f"✅ Generated {len(st.session_state.sales_df):,} sales records!")
-    
-    if st.session_state.sales_df is not None:
-        st.dataframe(st.session_state.sales_df.head(10), use_container_width=True)
-        csv = st.session_state.sales_df.to_csv(index=False)
-        st.download_button(
-            label="📥 Download Sales CSV",
-            data=csv,
-            file_name="sales_sample.csv",
-            mime="text/csv",
-            key="download_sales"
-        )
-    
-    # === HEALTHCARE DATA ===
-    st.markdown("---")
-    st.markdown("### 🏥 Healthcare Sample Data")
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.write("Generate patient records with diagnoses and treatments")
-    with col2:
-        healthcare_rows = st.number_input("Rows", min_value=100, max_value=100000, value=100000, step=10000, key="healthcare_rows")
-    
-    if st.button("Generate Sample Healthcare Data", type="primary", key="gen_healthcare"):
-        with st.spinner("Generating healthcare data..."):
-            st.session_state.healthcare_df = generate_healthcare_data_df(healthcare_rows)
-        st.success(f"✅ Generated {len(st.session_state.healthcare_df):,} patient records!")
-    
-    if st.session_state.healthcare_df is not None:
-        st.dataframe(st.session_state.healthcare_df.head(10), use_container_width=True)
-        csv = st.session_state.healthcare_df.to_csv(index=False)
-        st.download_button(
-            label="📥 Download Healthcare CSV",
-            data=csv,
-            file_name="healthcare_sample.csv",
-            mime="text/csv",
-            key="download_healthcare"
-        )
-    
-    # === FINANCE DATA ===
-    st.markdown("---")
-    st.markdown("### 💳 Finance Sample Data")
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.write("Generate financial transactions with accounts and merchants")
-    with col2:
-        finance_rows = st.number_input("Rows", min_value=100, max_value=100000, value=100000, step=10000, key="finance_rows")
-    
-    if st.button("Generate Sample Finance Data", type="primary", key="gen_finance"):
-        with st.spinner("Generating finance data..."):
-            st.session_state.finance_df = generate_finance_data_df(finance_rows)
-        st.success(f"✅ Generated {len(st.session_state.finance_df):,} transactions!")
-    
-    if st.session_state.finance_df is not None:
-        st.download_button(
-            label="📥 Download Finance CSV",
-            data=csv,
-            file_name="finance_sample.csv",
-            mime="text/csv",
-            key="download_finance"
-        )
+    with tab2:
+        if st.button("Generate Sample Sales Data", type="primary"):
+            st.session_state.df = generate_sample_data()
+            st.success("✅ Sample data generated successfully!")
+            st.dataframe(st.session_state.df.head(10), width='stretch')
+            
+            st.info("This sample dataset contains daily sales data with revenue, units sold, regions, product categories, and customer satisfaction scores.")
 
-with tab3:
+elif page == "🤖 AI Insights":
     st.header("🤖 AI-Powered Data Insights")
     
     if not st.session_state.gemini_api_key:
@@ -598,7 +521,7 @@ with tab3:
             ):
                 st.success("Insights downloaded!")
 
-with tab4:
+elif page == "💬 AI Chat Assistant":
     st.header("💬 AI Chat Assistant")
     
     if not st.session_state.gemini_api_key:
@@ -1342,107 +1265,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-# ==================== DATA GENERATION FUNCTIONS ====================
-
-def generate_sales_data_df(rows):
-    """Generate sales data as DataFrame"""
-    import random
-    from datetime import datetime, timedelta
-    
-    products = ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Headphones', 'Webcam', 'Desk', 'Chair']
-    categories = ['Electronics', 'Accessories', 'Furniture']
-    regions = ['North', 'South', 'East', 'West', 'Central']
-    
-    data = []
-    for i in range(1, rows + 1):
-        product = random.choice(products)
-        category = random.choice(categories)
-        quantity = random.randint(1, 10)
-        price = round(random.uniform(50, 1000), 2)
-        total = round(quantity * price, 2)
-        date = (datetime(2024, 1, 1) + timedelta(days=random.randint(0, 364))).strftime('%Y-%m-%d')
-        customer_id = f"CUST{random.randint(1, 5000):06d}"
-        region = random.choice(regions)
-        
-        data.append([i, date, product, category, quantity, price, total, customer_id, region])
-    
-    return pd.DataFrame(data, columns=['transaction_id', 'date', 'product', 'category', 'quantity', 'price', 'total', 'customer_id', 'region'])
-
-def generate_healthcare_data_df(rows):
-    """Generate healthcare data as DataFrame"""
-    import random
-    from datetime import datetime, timedelta
-    
-    diagnoses = ['Hypertension', 'Diabetes', 'Asthma', 'Arthritis', 'Pneumonia', 'Bronchitis', 'Fracture', 'Migraine']
-    genders = ['M', 'F', 'Other']
-    insurances = ['Medicare', 'Medicaid', 'Private', 'Uninsured']
-    
-    data = []
-    for i in range(1, rows + 1):
-        patient_id = f"PAT{i:08d}"
-        admission_date = datetime(2024, 1, 1) + timedelta(days=random.randint(0, 364))
-        treatment_days = random.randint(1, 14)
-        discharge_date = admission_date + timedelta(days=treatment_days)
-        diagnosis = random.choice(diagnoses)
-        age = random.randint(18, 98)
-        gender = random.choice(genders)
-        cost = round(random.uniform(1000, 50000), 2)
-        insurance = random.choice(insurances)
-        
-        data.append([
-            patient_id,
-            admission_date.strftime('%Y-%m-%d'),
-            discharge_date.strftime('%Y-%m-%d'),
-            diagnosis,
-            age,
-            gender,
-            treatment_days,
-            cost,
-            insurance
-        ])
-    
-    return pd.DataFrame(data, columns=['patient_id', 'admission_date', 'discharge_date', 'diagnosis', 'age', 'gender', 'treatment_days', 'cost', 'insurance'])
-
-def generate_finance_data_df(rows):
-    """Generate finance data as DataFrame"""
-    import random
-    from datetime import datetime, timedelta
-    
-    types = ['Debit', 'Credit', 'Transfer', 'ATM', 'Payment']
-    currencies = ['USD', 'EUR', 'GBP', 'JPY']
-    merchants = ['Amazon', 'Walmart', 'Target', 'Starbucks', 'Shell', 'Restaurant', 'Online Store', 'Grocery']
-    
-    balance = 10000.0
-    data = []
-    
-    for i in range(1, rows + 1):
-        txn_id = f"TXN{i:010d}"
-        timestamp = (datetime(2024, 1, 1) + timedelta(
-            days=random.randint(0, 364),
-            hours=random.randint(0, 23),
-            minutes=random.randint(0, 59),
-            seconds=random.randint(0, 59)
-        )).isoformat()
-        account_id = f"ACC{random.randint(1, 10000):08d}"
-        txn_type = random.choice(types)
-        amount = round(random.uniform(10, 2000), 2)
-        
-        if txn_type in ['Debit', 'ATM', 'Payment']:
-            balance -= amount
-        else:
-            balance += amount
-        
-        currency = random.choice(currencies)
-        merchant = random.choice(merchants)
-        
-        data.append([txn_id, timestamp, account_id, txn_type, amount, round(balance, 2), currency, merchant])
-        
-        if i % 10000 == 0:
-            balance = 10000 + random.uniform(0, 5000)
-    
-    return pd.DataFrame(data, columns=['transaction_id', 'timestamp', 'account_id', 'transaction_type', 'amount', 'balance', 'currency', 'merchant'])
-
-
-
-
