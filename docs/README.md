@@ -354,6 +354,8 @@ pytest --cov=app tests/
 
 Sample datasets included in `tests/data/`:
 - `sales_sample.csv`
+- `healthcare_sample.csv`
+- `finance_sample.csv`
 
 ---
 
