@@ -34,6 +34,10 @@ data/
 *.xlsx
 uploads/
 
+# Allow test data files
+!tests/data/
+!tests/data/*.csv
+
 # Logs
 *.log
 logs/
