@@ -408,7 +408,7 @@ We welcome contributions! See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidel
 - [ ] PDF export not yet supported
 - [ ] Limited to single-user mode (no collaboration)
 
-See [Issues](https://github.com/yourusername/ai-bi-dashboard/issues) for full list.
+See [Issues](https://github.com/ShanikwaH/ai-bi-dashboard/issues) for full list.
 
 ---
 
@@ -463,9 +463,9 @@ Thanks to everyone who tested, provided feedback, and contributed!
 ## 📞 Contact & Support
 
 ### Questions?
-- 📧 Email: your.email@example.com
-- 💬 Discussions: [GitHub Discussions](https://github.com/yourusername/ai-bi-dashboard/discussions)
-- 🐛 Bug Reports: [GitHub Issues](https://github.com/yourusername/ai-bi-dashboard/issues)
+- 📧 Email: nikki.19972010@hotmail.com
+- 💬 Discussions: [GitHub Discussions](https://github.com/ShanikwaH/ai-bi-dashboard/discussions)
+- 🐛 Bug Reports: [GitHub Issues](https://github.com/ShanikwaH/ai-bi-dashboard/issues)
 
 ### Follow the Project
 - ⭐ Star this repo
@@ -473,9 +473,8 @@ Thanks to everyone who tested, provided feedback, and contributed!
 - 🍴 Fork to contribute
 
 ### Social
-- LinkedIn: [Your Profile](https://linkedin.com/in/yourprofile)
-- Twitter: [@yourhandle](https://twitter.com/yourhandle)
-- Portfolio: [yourwebsite.com](https://yourwebsite.com)
+- LinkedIn: [Shanikwa Haynes](https://linkedin.com/in/shanikwahaynes)
+- Portfolio: [analyticsbyshanikwa.com](https://analyticsbyshanikwa.com)
 
 ---
 
@@ -488,26 +487,20 @@ Thanks to everyone who tested, provided feedback, and contributed!
 - [Video Walkthrough](https://youtube.com/watch?v=your-video)
 
 ### Blog Posts
-- [Building an AI-Powered BI Dashboard](https://medium.com/@you/article)
-- [Integrating Gemini AI with Python](https://dev.to/you/article)
-- [Time Series Forecasting for Business](https://yourwebsite.com/blog)
-
-### Academic Papers
-- Time Series Analysis Methods
-- Business Intelligence Best Practices
-- AI in Data Analytics
+- [Building an AI-Powered BI Dashboard](https://medium.com/@shanikwa.lhaynes/article)
+- [Time Series Forecasting for Business](https://analyticsbyshanikwa.com/blog)
 
 ---
 
 ## 📊 Project Stats
 
-![GitHub stars](https://img.shields.io/github/stars/yourusername/ai-bi-dashboard?style=social)
-![GitHub forks](https://img.shields.io/github/forks/yourusername/ai-bi-dashboard?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/yourusername/ai-bi-dashboard?style=social)
+![GitHub stars](https://img.shields.io/github/stars/ShanikwaH/ai-bi-dashboard?style=social)
+![GitHub forks](https://img.shields.io/github/forks/ShanikwaH/ai-bi-dashboard?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/ShanikwaH/ai-bi-dashboard?style=social)
 
-![GitHub issues](https://img.shields.io/github/issues/yourusername/ai-bi-dashboard)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/yourusername/ai-bi-dashboard)
-![GitHub last commit](https://img.shields.io/github/last-commit/yourusername/ai-bi-dashboard)
+![GitHub issues](https://img.shields.io/github/issues/ShanikwaH/ai-bi-dashboard)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/ShanikwaH/ai-bi-dashboard)
+![GitHub last commit](https://img.shields.io/github/last-commit/ShanikwaH/ai-bi-dashboard)
 
 ---
 
@@ -546,11 +539,11 @@ If you use this in academic work, please cite:
 
 ```bibtex
 @software{ai_bi_dashboard,
-  author = {Your Name},
+  author = {Shanikwa Haynes},
   title = {AI-Powered Business Intelligence Dashboard},
-  year = {2024},
+  year = {2025},
   publisher = {GitHub},
-  url = {https://github.com/yourusername/ai-bi-dashboard}
+  url = {https://github.com/ShanikwaH/ai-bi-dashboard}
 }
 ```
 
@@ -566,7 +559,7 @@ Our goal is to make data analysis **accessible to everyone**, regardless of tech
 
 <div align="center">
 
-**Built with ❤️ by [Your Name](https://yourwebsite.com)**
+**Built with ❤️ by [Shanikwa Haynes](https://analyticsbyshanikwa.com)**
 
 [⬆ Back to Top](#-ai-powered-business-intelligence-dashboard)
 
