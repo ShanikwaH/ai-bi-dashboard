@@ -1,6 +1,6 @@
 import streamlit as st
 
-# Page configuration - MUST BE IMMEDIATELY AFTER importing streamlit
+# CRITICAL: Page config MUST be first Streamlit command
 st.set_page_config(
     page_title="AI-Powered Business Intelligence Dashboard",
     page_icon="🤖",
@@ -8,20 +8,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# NOW import everything else
+# Now import everything else
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import io
-import google.generativeai as genai
 import json
 
 # Graceful Gemini import
 try:
     import google.generativeai as genai
+    GENAI_AVAILABLE = True
 except ImportError:
+    GENAI_AVAILABLE = False
     genai = None
     st.error("Google Generative AI not available. Please check requirements.txt")
 
@@ -1406,5 +1407,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
