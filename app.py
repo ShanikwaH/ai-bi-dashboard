@@ -275,7 +275,7 @@ with st.sidebar:
             "Enter Gemini API Key",
             type="password",
             value=st.session_state.gemini_api_key if st.session_state.gemini_api_key else "",
-            help="Get your API key from https://makersuite.google.com/app/apikey"
+            help="Get your API key from https://aistudio.google.com/welcome"
         )
         
         model_choice = st.selectbox(
@@ -1219,3 +1219,4 @@ st.markdown(
     unsafe_allow_html=True
 
 )
+
