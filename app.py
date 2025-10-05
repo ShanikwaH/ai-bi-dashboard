@@ -463,8 +463,16 @@ elif page == "📁 Data Upload":
             st.session_state.df = generate_sample_data()
             st.success("✅ Sample data generated successfully!")
             st.dataframe(st.session_state.df.head(10), width='stretch')
-            
-            st.info("This sample dataset contains daily sales data with revenue, units sold, regions, product categories, and customer satisfaction scores.")
+
+        if st.button("Generate Sample Healthcare Data", type="primary"):
+            st.session_state.df = generate_sample_data()
+            st.success("✅ Sample data generated successfully!")
+            st.dataframe(st.session_state.df.head(10), width='stretch')
+
+        if st.button("Generate Sample Finance Data", type="primary"):
+            st.session_state.df = generate_sample_data()
+            st.success("✅ Sample data generated successfully!")
+            st.dataframe(st.session_state.df.head(10), width='stretch')
 
 elif page == "🤖 AI Insights":
     st.header("🤖 AI-Powered Data Insights")
@@ -1265,3 +1273,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
