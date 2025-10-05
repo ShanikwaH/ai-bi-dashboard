@@ -418,7 +418,7 @@ elif page == "📁 Data Upload":
     
 tab1, tab2, tab3 = st.tabs(["📊 Dashboard", "🔧 Generate Data", "🤖 AI Insights"])
     
-    with tab1:
+with tab1:
         uploaded_file = st.file_uploader(
             "Upload your CSV or Excel file",
             type=['csv', 'xlsx', 'xls'],
@@ -1442,5 +1442,6 @@ def generate_finance_data_df(rows):
             balance = 10000 + random.uniform(0, 5000)
     
     return pd.DataFrame(data, columns=['transaction_id', 'timestamp', 'account_id', 'transaction_type', 'amount', 'balance', 'currency', 'merchant'])
+
 
 
