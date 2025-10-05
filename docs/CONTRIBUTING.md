@@ -722,7 +722,7 @@ Exceptional contributors may be:
 
 ## 🤝 Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](docs/CODE_OF_CONDUCT.md).
+This project follows the [Contributor Covenant Code of Conduct](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/CODE_OF_CONDUCT.md).
 
 **In short:**
 - Be respectful and inclusive
