@@ -1,20 +1,28 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import io
-import google.generativeai as genai
-import json
 
-# Page configuration
+# Page configuration MUST be first - before any other Streamlit commands
 st.set_page_config(
     page_title="AI-Powered Business Intelligence Dashboard",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
+import io
+import json
+
+# Graceful Gemini import with fallback
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+    genai = None
 
 # Custom CSS
 st.markdown("""
@@ -70,6 +78,10 @@ if 'chat_history' not in st.session_state:
 # Configure Gemini AI
 def configure_gemini(api_key, model_name='gemini-1.5-flash'):
     """Configure Gemini AI with API key"""
+    if not GENAI_AVAILABLE:
+        st.error("Google Generative AI library is not available")
+        return None
+    
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(model_name)
@@ -86,6 +98,9 @@ def configure_gemini(api_key, model_name='gemini-1.5-flash'):
 # Generate AI insights
 def generate_ai_insights(df, question=None):
     """Generate insights using Gemini AI"""
+    if not GENAI_AVAILABLE:
+        return "Google Generative AI is not available. Please check your installation."
+    
     if st.session_state.gemini_model is None:
         return "Please configure Gemini API key first."
     
@@ -140,6 +155,9 @@ Provide a comprehensive analysis."""
 # Generate forecast interpretation
 def interpret_forecast(historical_data, forecast_data, method_name):
     """Use AI to interpret forecast results"""
+    if not GENAI_AVAILABLE:
+        return "Google Generative AI is not available."
+    
     if st.session_state.gemini_model is None:
         return "AI interpretation not available. Please configure Gemini API key."
     
@@ -169,6 +187,9 @@ Keep the response concise but insightful."""
 # Generate automated report
 def generate_automated_report(df):
     """Generate comprehensive AI report"""
+    if not GENAI_AVAILABLE:
+        return "Google Generative AI is not available."
+    
     if st.session_state.gemini_model is None:
         return "Please configure Gemini API key first."
     
@@ -361,53 +382,56 @@ def exponential_smoothing_forecast(series, alpha=0.3, periods=30):
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### 🤖 AI BI Dashboard")
-    st.title("🤖 AI-Powered BI")
+    st.markdown("### AI BI Dashboard")
+    st.title("AI-Powered BI")
     
     # Gemini API Configuration
-    with st.expander("⚙️ Configure Gemini AI", expanded=not st.session_state.gemini_api_key):
-        api_key = st.text_input(
-            "Enter Gemini API Key",
-            type="password",
-            value=st.session_state.gemini_api_key if st.session_state.gemini_api_key else "",
-            help="Get your API key from https://aistudio.google.com/welcome"
-        )
-        
-        model_choice = st.selectbox(
-            "Select AI Model",
-            ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"],
-            help="Flash is faster & cheaper, Pro is more capable, 2.0 is experimental"
-        )
-        
-        if st.button("Connect to Gemini AI", type="primary"):
-            if api_key:
-                with st.spinner(f"Connecting to {model_choice}..."):
-                    model = configure_gemini(api_key, model_choice)
-                    if model:
-                        st.session_state.gemini_api_key = api_key
-                        st.session_state.gemini_model = model
-                        st.session_state.model_name = model_choice
-                        st.success(f"✅ Connected to {model_choice}!")
-                        st.rerun()
-            else:
-                st.error("Please enter an API key")
-        
-        if st.session_state.gemini_api_key:
-            current_model = st.session_state.get('model_name', 'gemini-1.5-flash')
-            st.success(f"🤖 AI: Connected ({current_model})")
-            if st.button("Disconnect"):
-                st.session_state.gemini_api_key = None
-                st.session_state.gemini_model = None
-                st.session_state.model_name = None
-                st.rerun()
+    with st.expander("Configure Gemini AI", expanded=not st.session_state.gemini_api_key):
+        if not GENAI_AVAILABLE:
+            st.error("Google Generative AI library is not installed. AI features disabled.")
+        else:
+            api_key = st.text_input(
+                "Enter Gemini API Key",
+                type="password",
+                value=st.session_state.gemini_api_key if st.session_state.gemini_api_key else "",
+                help="Get your API key from https://aistudio.google.com/welcome"
+            )
+            
+            model_choice = st.selectbox(
+                "Select AI Model",
+                ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"],
+                help="Flash is faster & cheaper, Pro is more capable, 2.0 is experimental"
+            )
+            
+            if st.button("Connect to Gemini AI", type="primary"):
+                if api_key:
+                    with st.spinner(f"Connecting to {model_choice}..."):
+                        model = configure_gemini(api_key, model_choice)
+                        if model:
+                            st.session_state.gemini_api_key = api_key
+                            st.session_state.gemini_model = model
+                            st.session_state.model_name = model_choice
+                            st.success(f"Connected to {model_choice}!")
+                            st.rerun()
+                else:
+                    st.error("Please enter an API key")
+            
+            if st.session_state.gemini_api_key:
+                current_model = st.session_state.get('model_name', 'gemini-1.5-flash')
+                st.success(f"AI: Connected ({current_model})")
+                if st.button("Disconnect"):
+                    st.session_state.gemini_api_key = None
+                    st.session_state.gemini_model = None
+                    st.session_state.model_name = None
+                    st.rerun()
     
     st.markdown("---")
     
     page = st.radio(
         "Select Module",
-        ["🏠 Home", "📁 Data Upload", "🤖 AI Insights", "💬 AI Chat Assistant",
-         "🔍 Exploratory Analysis", "📈 Visualizations", "🔮 AI-Enhanced Forecasting", 
-         "📊 Statistical Analysis", "📄 AI Report Generator", "📥 Export"]
+        ["Home", "Data Upload", "AI Insights", "AI Chat Assistant",
+         "Exploratory Analysis", "Visualizations", "AI-Enhanced Forecasting", 
+         "Statistical Analysis", "AI Report Generator", "Export"]
     )
     
     st.markdown("---")
@@ -415,37 +439,37 @@ with st.sidebar:
     st.info("AI-powered business intelligence with Google Gemini integration for advanced insights and analysis.")
 
 # Main Content
-if page == "🏠 Home":
-    st.markdown("<div class='main-header'>🤖 AI-Powered Business Intelligence Dashboard</div>", unsafe_allow_html=True)
+if page == "Home":
+    st.markdown("<div class='main-header'>AI-Powered Business Intelligence Dashboard</div>", unsafe_allow_html=True)
     
     if not st.session_state.gemini_api_key:
-        st.warning("⚠️ Configure Gemini AI in the sidebar to unlock AI-powered features!")
+        st.warning("Configure Gemini AI in the sidebar to unlock AI-powered features!")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("### 🤖 AI-Powered Analysis")
+        st.markdown("### AI-Powered Analysis")
         st.write("Get instant insights, ask questions in natural language, and receive AI-generated recommendations.")
         
     with col2:
-        st.markdown("### 📊 Advanced Analytics")
+        st.markdown("### Advanced Analytics")
         st.write("Comprehensive exploratory data analysis with automated insights and statistical summaries.")
         
     with col3:
-        st.markdown("### 🔮 Smart Forecasting")
+        st.markdown("### Smart Forecasting")
         st.write("Generate forecasts with AI interpretation and reliability assessments.")
     
     st.markdown("---")
     
-    st.markdown("### 🎯 AI-Enhanced Features")
+    st.markdown("### AI-Enhanced Features")
     
     features = {
-        "🤖 AI Insights": "Automatic analysis of your data with actionable recommendations",
-        "💬 Chat Assistant": "Ask questions about your data in natural language",
-        "📄 Automated Reports": "Generate comprehensive executive reports instantly",
-        "🔮 Smart Forecasting": "Forecasts with AI-powered interpretation and risk assessment",
-        "📊 Interactive Visualizations": "Time series, correlations, and geographic analysis",
-        "📥 Export Capabilities": "Download data and AI-generated reports"
+        "AI Insights": "Automatic analysis of your data with actionable recommendations",
+        "Chat Assistant": "Ask questions about your data in natural language",
+        "Automated Reports": "Generate comprehensive executive reports instantly",
+        "Smart Forecasting": "Forecasts with AI-powered interpretation and risk assessment",
+        "Interactive Visualizations": "Time series, correlations, and geographic analysis",
+        "Export Capabilities": "Download data and AI-generated reports"
     }
     
     for feature, description in features.items():
@@ -456,13 +480,13 @@ if page == "🏠 Home":
     col1, col2 = st.columns(2)
     
     with col1:
-        st.info("👈 **Get Started:** Configure your Gemini API key in the sidebar to enable AI features.")
+        st.info("Get Started: Configure your Gemini API key in the sidebar to enable AI features.")
     
     with col2:
-        st.success("💡 **Pro Tip:** Start by uploading your data or using sample data, then explore AI Insights!")
+        st.success("Pro Tip: Start by uploading your data or using sample data, then explore AI Insights!")
 
-elif page == "📁 Data Upload":
-    st.header("📁 Data Upload & Management")
+elif page == "Data Upload":
+    st.header("Data Upload & Management")
     
     tab1, tab2 = st.tabs(["Upload Data", "Use Sample Data"])
     
@@ -481,10 +505,10 @@ elif page == "📁 Data Upload":
                     df = pd.read_excel(uploaded_file)
                 
                 st.session_state.df = df
-                st.success(f"✅ File uploaded successfully! Loaded {len(df)} rows and {len(df.columns)} columns.")
+                st.success(f"File uploaded successfully! Loaded {len(df)} rows and {len(df.columns)} columns.")
                 
                 st.subheader("Data Preview")
-                st.dataframe(df.head(10), width='stretch')
+                st.dataframe(df.head(10), use_container_width=True)
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -495,11 +519,11 @@ elif page == "📁 Data Upload":
                     st.metric("Missing Values", df.isnull().sum().sum())
                 
                 # AI Quick Insights
-                if st.session_state.gemini_api_key and st.button("🤖 Get AI Quick Insights", type="primary"):
+                if st.session_state.gemini_api_key and st.button("Get AI Quick Insights", type="primary"):
                     with st.spinner("AI is analyzing your data..."):
                         insights = generate_ai_insights(df)
                         st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
-                        st.markdown("### 🤖 AI Insights")
+                        st.markdown("### AI Insights")
                         st.markdown(insights)
                         st.markdown("</div>", unsafe_allow_html=True)
                 
@@ -518,7 +542,7 @@ elif page == "📁 Data Upload":
             st.session_state.finance_df_sample = None
         
         # === SALES DATA ===
-        st.markdown("### 💼 Sales Sample Data")
+        st.markdown("### Sales Sample Data")
         col1, col2 = st.columns([3, 1])
         with col1:
             st.write("Sales transactions with products, prices, and regional data")
@@ -528,14 +552,14 @@ elif page == "📁 Data Upload":
         if st.button("Generate Sales Data", type="primary", key="gen_sales_sample"):
             with st.spinner("Generating sales data..."):
                 st.session_state.sales_df_sample = generate_sales_data_df(sales_rows)
-                st.session_state.df = st.session_state.sales_df_sample  # Set as active dataset
-            st.success(f"✅ Generated {len(st.session_state.sales_df_sample):,} sales records!")
+                st.session_state.df = st.session_state.sales_df_sample
+            st.success(f"Generated {len(st.session_state.sales_df_sample):,} sales records!")
         
         if st.session_state.sales_df_sample is not None:
             st.dataframe(st.session_state.sales_df_sample.head(10), use_container_width=True)
             csv = st.session_state.sales_df_sample.to_csv(index=False)
             st.download_button(
-                label="📥 Download Sales CSV",
+                label="Download Sales CSV",
                 data=csv,
                 file_name="sales_sample.csv",
                 mime="text/csv",
@@ -545,7 +569,7 @@ elif page == "📁 Data Upload":
         st.markdown("---")
         
         # === HEALTHCARE DATA ===
-        st.markdown("### 🏥 Healthcare Sample Data")
+        st.markdown("### Healthcare Sample Data")
         col1, col2 = st.columns([3, 1])
         with col1:
             st.write("Patient records with diagnoses, treatments, and insurance")
@@ -555,14 +579,14 @@ elif page == "📁 Data Upload":
         if st.button("Generate Healthcare Data", type="primary", key="gen_healthcare_sample"):
             with st.spinner("Generating healthcare data..."):
                 st.session_state.healthcare_df_sample = generate_healthcare_data_df(healthcare_rows)
-                st.session_state.df = st.session_state.healthcare_df_sample  # Set as active dataset
-            st.success(f"✅ Generated {len(st.session_state.healthcare_df_sample):,} patient records!")
+                st.session_state.df = st.session_state.healthcare_df_sample
+            st.success(f"Generated {len(st.session_state.healthcare_df_sample):,} patient records!")
         
         if st.session_state.healthcare_df_sample is not None:
             st.dataframe(st.session_state.healthcare_df_sample.head(10), use_container_width=True)
             csv = st.session_state.healthcare_df_sample.to_csv(index=False)
             st.download_button(
-                label="📥 Download Healthcare CSV",
+                label="Download Healthcare CSV",
                 data=csv,
                 file_name="healthcare_sample.csv",
                 mime="text/csv",
@@ -572,7 +596,7 @@ elif page == "📁 Data Upload":
         st.markdown("---")
         
         # === FINANCE DATA ===
-        st.markdown("### 💳 Finance Sample Data")
+        st.markdown("### Finance Sample Data")
         col1, col2 = st.columns([3, 1])
         with col1:
             st.write("Financial transactions with accounts, merchants, and balances")
@@ -582,29 +606,29 @@ elif page == "📁 Data Upload":
         if st.button("Generate Finance Data", type="primary", key="gen_finance_sample"):
             with st.spinner("Generating finance data..."):
                 st.session_state.finance_df_sample = generate_finance_data_df(finance_rows)
-                st.session_state.df = st.session_state.finance_df_sample  # Set as active dataset
-            st.success(f"✅ Generated {len(st.session_state.finance_df_sample):,} transactions!")
+                st.session_state.df = st.session_state.finance_df_sample
+            st.success(f"Generated {len(st.session_state.finance_df_sample):,} transactions!")
         
         if st.session_state.finance_df_sample is not None:
             st.dataframe(st.session_state.finance_df_sample.head(10), use_container_width=True)
             csv = st.session_state.finance_df_sample.to_csv(index=False)
             st.download_button(
-                label="📥 Download Finance CSV",
+                label="Download Finance CSV",
                 data=csv,
                 file_name="finance_sample.csv",
                 mime="text/csv",
                 key="download_finance_sample"
             )
         
-        st.info("💡 **Tip:** Download these files and place them in `tests/data/` for permanent use")
+        st.info("Tip: Download these files and place them in tests/data/ for permanent use")
 
-elif page == "🤖 AI Insights":
-    st.header("🤖 AI-Powered Data Insights")
+elif page == "AI Insights":
+    st.header("AI-Powered Data Insights")
     
     if not st.session_state.gemini_api_key:
-        st.warning("⚠️ Please configure your Gemini API key in the sidebar to use AI features.")
+        st.warning("Please configure your Gemini API key in the sidebar to use AI features.")
     elif st.session_state.df is None:
-        st.warning("⚠️ Please upload data or generate sample data first!")
+        st.warning("Please upload data or generate sample data first!")
     else:
         df = st.session_state.df
         
@@ -621,7 +645,7 @@ elif page == "🤖 AI Insights":
             )
         
         with col2:
-            if st.button("🤖 Generate AI Insights", type="primary", width='stretch'):
+            if st.button("Generate AI Insights", type="primary", use_container_width=True):
                 with st.spinner("AI is analyzing your data... This may take a moment."):
                     
                     if analysis_type == "Comprehensive Overview":
@@ -632,7 +656,7 @@ elif page == "🤖 AI Insights":
                         insights = generate_ai_insights(df, "Identify any anomalies, outliers, or unusual patterns in this data. What could be causing them?")
                     elif analysis_type == "Performance Analysis":
                         insights = generate_ai_insights(df, "Analyze the performance metrics in this data. Which areas are performing well and which need improvement?")
-                    else:  # Predictive Insights
+                    else:
                         insights = generate_ai_insights(df, "Based on historical patterns, what predictions can you make about future trends? What factors should we monitor?")
                     
                     st.session_state.last_insights = insights
@@ -640,31 +664,30 @@ elif page == "🤖 AI Insights":
         if 'last_insights' in st.session_state:
             st.markdown("---")
             st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
-            st.markdown("### 🤖 AI Analysis Results")
+            st.markdown("### AI Analysis Results")
             st.markdown(st.session_state.last_insights)
             st.markdown("</div>", unsafe_allow_html=True)
             
-            # Download insights
             if st.download_button(
-                label="📥 Download AI Insights",
+                label="Download AI Insights",
                 data=st.session_state.last_insights,
                 file_name=f"ai_insights_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                 mime="text/plain"
             ):
                 st.success("Insights downloaded!")
 
-elif page == "💬 AI Chat Assistant":
-    st.header("💬 AI Chat Assistant")
+elif page == "AI Chat Assistant":
+    st.header("AI Chat Assistant")
     
     if not st.session_state.gemini_api_key:
-        st.warning("⚠️ Please configure your Gemini API key in the sidebar to use the chat assistant.")
+        st.warning("Please configure your Gemini API key in the sidebar to use the chat assistant.")
     elif st.session_state.df is None:
-        st.warning("⚠️ Please upload data or generate sample data first!")
+        st.warning("Please upload data or generate sample data first!")
     else:
         df = st.session_state.df
         
         st.markdown("### Ask questions about your data in natural language")
-        st.info("💡 Examples: 'What are the top performing regions?', 'Explain the revenue trends', 'What factors influence customer satisfaction?'")
+        st.info("Examples: 'What are the top performing regions?', 'Explain the revenue trends', 'What factors influence customer satisfaction?'")
         
         # Display chat history
         chat_container = st.container()
@@ -674,7 +697,7 @@ elif page == "💬 AI Chat Assistant":
                 if role == "user":
                     st.markdown(f"<div class='chat-message user-message'><b>You:</b> {message}</div>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<div class='chat-message ai-message'><b>🤖 AI:</b> {message}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='chat-message ai-message'><b>AI:</b> {message}</div>", unsafe_allow_html=True)
         
         # Chat input
         col1, col2 = st.columns([5, 1])
@@ -687,33 +710,30 @@ elif page == "💬 AI Chat Assistant":
             )
         
         with col2:
-            send_button = st.button("Send", type="primary", width='stretch')
+            send_button = st.button("Send", type="primary", use_container_width=True)
         
         if send_button and user_question:
-            # Add user message to history
             st.session_state.chat_history.append(("user", user_question))
             
-            # Generate AI response
-            with st.spinner("🤖 AI is thinking..."):
+            with st.spinner("AI is thinking..."):
                 response = generate_ai_insights(df, user_question)
                 st.session_state.chat_history.append(("ai", response))
             
             st.rerun()
         
-        # Clear chat button
-        if st.button("🗑️ Clear Chat History"):
+        if st.button("Clear Chat History"):
             st.session_state.chat_history = []
             st.rerun()
 
-elif page == "🔍 Exploratory Analysis":
-    st.header("🔍 Exploratory Data Analysis")
+elif page == "Exploratory Analysis":
+    st.header("Exploratory Data Analysis")
     
     if st.session_state.df is None:
-        st.warning("⚠️ Please upload data or generate sample data first!")
+        st.warning("Please upload data or generate sample data first!")
     else:
         df = st.session_state.df
         
-        tab1, tab2, tab3 = st.tabs(["📋 Data Summary", "🔢 Statistical Analysis", "🧹 Data Quality"])
+        tab1, tab2, tab3 = st.tabs(["Data Summary", "Statistical Analysis", "Data Quality"])
         
         with tab1:
             st.subheader("Dataset Overview")
@@ -740,11 +760,11 @@ elif page == "🔍 Exploratory Analysis":
                 'Unique Values': [df[col].nunique() for col in df.columns]
             })
             
-            st.dataframe(col_info, width='stretch')
+            st.dataframe(col_info, use_container_width=True)
             
             st.markdown("---")
             st.subheader("Data Sample")
-            st.dataframe(df.head(20), width='stretch')
+            st.dataframe(df.head(20), use_container_width=True)
         
         with tab2:
             st.subheader("Statistical Summary")
@@ -752,7 +772,7 @@ elif page == "🔍 Exploratory Analysis":
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             
             if numeric_cols:
-                st.dataframe(df[numeric_cols].describe(), width='stretch')
+                st.dataframe(df[numeric_cols].describe(), use_container_width=True)
                 
                 st.markdown("---")
                 st.subheader("Distribution Analysis")
@@ -792,7 +812,7 @@ elif page == "🔍 Exploratory Analysis":
             
             if len(quality_df) > 0:
                 st.warning(f"Found {len(quality_df)} columns with missing values")
-                st.dataframe(quality_df, width='stretch')
+                st.dataframe(quality_df, use_container_width=True)
                 
                 fig = px.bar(quality_df, x='Column', y='Missing %',
                            title="Missing Values by Column (%)",
@@ -800,7 +820,7 @@ elif page == "🔍 Exploratory Analysis":
                            color_continuous_scale='Reds')
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.success("✅ No missing values detected in the dataset!")
+                st.success("No missing values detected in the dataset!")
             
             duplicates = df.duplicated().sum()
             st.metric("Duplicate Rows", duplicates)
@@ -808,11 +828,11 @@ elif page == "🔍 Exploratory Analysis":
             if duplicates > 0:
                 st.warning(f"Found {duplicates} duplicate rows in the dataset")
 
-elif page == "📈 Visualizations":
-    st.header("📈 Interactive Visualizations")
+elif page == "Visualizations":
+    st.header("Interactive Visualizations")
     
     if st.session_state.df is None:
-        st.warning("⚠️ Please upload data or generate sample data first!")
+        st.warning("Please upload data or generate sample data first!")
     else:
         df = st.session_state.df
         
@@ -913,7 +933,7 @@ elif page == "📈 Visualizations":
                         })
                 
                 corr_df = pd.DataFrame(corr_pairs).sort_values('Correlation', key=abs, ascending=False).head(10)
-                st.dataframe(corr_df, width='stretch')
+                st.dataframe(corr_df, use_container_width=True)
             else:
                 st.info("Need at least 2 numeric columns for correlation analysis.")
         
@@ -933,17 +953,17 @@ elif page == "📈 Visualizations":
                                color_continuous_scale='Viridis')
                     st.plotly_chart(fig, use_container_width=True)
                     
-                    st.dataframe(grouped, width='stretch')
+                    st.dataframe(grouped, use_container_width=True)
                 else:
                     st.info("No numeric columns available for geographic analysis.")
             else:
                 st.info("No geographic/region column found in the dataset.")
 
-elif page == "🔮 AI-Enhanced Forecasting":
-    st.header("🔮 AI-Enhanced Time Series Forecasting")
+elif page == "AI-Enhanced Forecasting":
+    st.header("AI-Enhanced Time Series Forecasting")
     
     if st.session_state.df is None:
-        st.warning("⚠️ Please upload data or generate sample data first!")
+        st.warning("Please upload data or generate sample data first!")
     else:
         df = st.session_state.df
         
@@ -985,7 +1005,6 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     'Exponential Smoothing': es_forecast
                 })
                 
-                # Store forecast data in session state
                 st.session_state.forecast_data = {
                     'ts_data': ts_data,
                     'ma_forecast': ma_forecast,
@@ -997,11 +1016,9 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     'es_alpha': es_alpha
                 }
             
-            # Display forecast if it exists in session state
             if 'forecast_data' in st.session_state:
                 fdata = st.session_state.forecast_data
                 
-                # Plotting
                 fig = go.Figure()
                 
                 fig.add_trace(go.Scatter(
@@ -1038,7 +1055,6 @@ elif page == "🔮 AI-Enhanced Forecasting":
                 
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Forecast summary
                 st.subheader("Forecast Summary")
                 
                 col1, col2 = st.columns(2)
@@ -1055,15 +1071,14 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     st.metric("Min Forecast", f"{np.min(fdata['es_forecast']):,.2f}")
                     st.metric("Max Forecast", f"{np.max(fdata['es_forecast']):,.2f}")
                 
-                # AI Interpretation
                 if st.session_state.gemini_api_key:
                     st.markdown("---")
-                    st.subheader("🤖 AI Forecast Interpretation")
+                    st.subheader("AI Forecast Interpretation")
                     
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        if st.button("Interpret Moving Average Forecast", width='stretch', key="interpret_ma"):
+                        if st.button("Interpret Moving Average Forecast", use_container_width=True, key="interpret_ma"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['ma_forecast'], "Moving Average")
@@ -1071,14 +1086,13 @@ elif page == "🔮 AI-Enhanced Forecasting":
                                 except Exception as e:
                                     st.error(f"Error generating interpretation: {str(e)}")
                         
-                        # Display interpretation if it exists
                         if 'ma_interpretation' in st.session_state:
                             st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
                             st.markdown(st.session_state.ma_interpretation)
                             st.markdown("</div>", unsafe_allow_html=True)
                     
                     with col2:
-                        if st.button("Interpret Exponential Smoothing Forecast", width='stretch', key="interpret_es"):
+                        if st.button("Interpret Exponential Smoothing Forecast", use_container_width=True, key="interpret_es"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['es_forecast'], "Exponential Smoothing")
@@ -1086,19 +1100,16 @@ elif page == "🔮 AI-Enhanced Forecasting":
                                 except Exception as e:
                                     st.error(f"Error generating interpretation: {str(e)}")
                         
-                        # Display interpretation if it exists
                         if 'es_interpretation' in st.session_state:
                             st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
                             st.markdown(st.session_state.es_interpretation)
                             st.markdown("</div>", unsafe_allow_html=True)
                 
-                # Display forecast table
                 st.subheader("Forecast Data")
-                st.dataframe(fdata['forecast_df'], width='stretch')
+                st.dataframe(fdata['forecast_df'], use_container_width=True)
                 
-                # Clear forecast button
                 st.markdown("---")
-                if st.button("🗑️ Clear Forecast", type="secondary", help="Remove forecast and interpretations"):
+                if st.button("Clear Forecast", type="secondary", help="Remove forecast and interpretations"):
                     if 'forecast_data' in st.session_state:
                         del st.session_state.forecast_data
                     if 'ma_interpretation' in st.session_state:
@@ -1110,11 +1121,11 @@ elif page == "🔮 AI-Enhanced Forecasting":
         else:
             st.info("Please ensure your dataset has both date and numeric columns for forecasting.")
 
-elif page == "📊 Statistical Analysis":
-    st.header("📊 Statistical Analysis")
+elif page == "Statistical Analysis":
+    st.header("Statistical Analysis")
     
     if st.session_state.df is None:
-        st.warning("⚠️ Please upload data or generate sample data first!")
+        st.warning("Please upload data or generate sample data first!")
     else:
         df = st.session_state.df
         
@@ -1135,7 +1146,7 @@ elif page == "📊 Statistical Analysis":
                     stats_df['skewness'] = df[selected_cols].skew()
                     stats_df['kurtosis'] = df[selected_cols].kurtosis()
                     
-                    st.dataframe(stats_df, width='stretch')
+                    st.dataframe(stats_df, use_container_width=True)
                     
                     for col in selected_cols:
                         fig = px.histogram(df, x=col, marginal="box",
@@ -1234,17 +1245,17 @@ elif page == "📊 Statistical Analysis":
                 
                 if len(outliers) > 0:
                     st.subheader("Outlier Data")
-                    st.dataframe(outliers, width='stretch')
+                    st.dataframe(outliers, use_container_width=True)
             else:
                 st.info("No numeric columns found for outlier detection.")
 
-elif page == "📄 AI Report Generator":
-    st.header("📄 AI-Powered Report Generator")
+elif page == "AI Report Generator":
+    st.header("AI-Powered Report Generator")
     
     if not st.session_state.gemini_api_key:
-        st.warning("⚠️ Please configure your Gemini API key in the sidebar to generate AI reports.")
+        st.warning("Please configure your Gemini API key in the sidebar to generate AI reports.")
     elif st.session_state.df is None:
-        st.warning("⚠️ Please upload data or generate sample data first!")
+        st.warning("Please upload data or generate sample data first!")
     else:
         df = st.session_state.df
         
@@ -1263,7 +1274,7 @@ elif page == "📄 AI Report Generator":
             include_charts = st.checkbox("Include Key Metrics", value=True)
         
         with col3:
-            if st.button("🤖 Generate AI Report", type="primary", width='stretch'):
+            if st.button("Generate AI Report", type="primary", use_container_width=True):
                 with st.spinner("AI is generating your comprehensive report... This may take a minute."):
                     report = generate_automated_report(df)
                     st.session_state.generated_report = report
@@ -1271,16 +1282,14 @@ elif page == "📄 AI Report Generator":
         if 'generated_report' in st.session_state:
             st.markdown("---")
             
-            # Display report
             st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
-            st.markdown("### 📄 Generated Report")
+            st.markdown("### Generated Report")
             st.markdown(st.session_state.generated_report)
             st.markdown("</div>", unsafe_allow_html=True)
             
-            # Show key metrics if requested
             if include_charts:
                 st.markdown("---")
-                st.subheader("📊 Key Metrics Dashboard")
+                st.subheader("Key Metrics Dashboard")
                 
                 numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
                 
@@ -1294,20 +1303,18 @@ elif page == "📄 AI Report Generator":
                                 delta=f"{df[col_name].std():.2f} σ"
                             )
             
-            # Download report
             col1, col2 = st.columns(2)
             
             with col1:
                 st.download_button(
-                    label="📥 Download Report (TXT)",
+                    label="Download Report (TXT)",
                     data=st.session_state.generated_report,
                     file_name=f"ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    width='stretch'
+                    use_container_width=True
                 )
             
             with col2:
-                # Create formatted report with metrics
                 full_report = f"""
 AI-POWERED BUSINESS INTELLIGENCE REPORT
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
@@ -1325,18 +1332,18 @@ Date Range: {df.iloc[:, 0].min() if len(df) > 0 else 'N/A'} to {df.iloc[:, 0].ma
 Generated by AI-Powered BI Dashboard
 """
                 st.download_button(
-                    label="📥 Download Full Report (TXT)",
+                    label="Download Full Report (TXT)",
                     data=full_report,
                     file_name=f"full_ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    width='stretch'
+                    use_container_width=True
                 )
 
-elif page == "📥 Export":
-    st.header("📥 Export Data & Reports")
+elif page == "Export":
+    st.header("Export Data & Reports")
     
     if st.session_state.df is None:
-        st.warning("⚠️ Please upload data or generate sample data first!")
+        st.warning("Please upload data or generate sample data first!")
     else:
         df = st.session_state.df
         
@@ -1350,7 +1357,7 @@ elif page == "📥 Export":
             if export_type == "CSV":
                 csv = df.to_csv(index=False)
                 st.download_button(
-                    label="📥 Download as CSV",
+                    label="Download as CSV",
                     data=csv,
                     file_name=f"export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
@@ -1363,7 +1370,7 @@ elif page == "📥 Export":
                     df.to_excel(writer, sheet_name='Data', index=False)
                 
                 st.download_button(
-                    label="📥 Download as Excel",
+                    label="Download as Excel",
                     data=buffer.getvalue(),
                     file_name=f"export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -1373,7 +1380,7 @@ elif page == "📥 Export":
             elif export_type == "JSON":
                 json_str = df.to_json(orient='records', indent=2)
                 st.download_button(
-                    label="📥 Download as JSON",
+                    label="Download as JSON",
                     data=json_str,
                     file_name=f"export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                     mime="application/json",
@@ -1385,14 +1392,14 @@ elif page == "📥 Export":
         
         st.markdown("---")
         st.subheader("Data Preview")
-        st.dataframe(df.head(10), width='stretch')
+        st.dataframe(df.head(10), use_container_width=True)
 
 # Footer
 st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center; color: #666;'>
-        <p>🤖 AI-Powered Business Intelligence Dashboard | Built with Streamlit & Google Gemini | © 2025</p>
+        <p>AI-Powered Business Intelligence Dashboard | Built with Streamlit & Google Gemini | © 2025</p>
     </div>
     """,
     unsafe_allow_html=True
