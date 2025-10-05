@@ -19,13 +19,13 @@ st.set_page_config(
 
 components.html("""
 <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-2H973Z24CJ"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-C9N4L7M92T"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'G-2H973Z24CJ');
+  gtag('config', 'G-C9N4L7M92T');
 </script>
 """, height=0)
 
@@ -1410,4 +1410,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
