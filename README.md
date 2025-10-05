@@ -2,8 +2,8 @@
 
 > Transform your data analysis workflow with AI-driven insights, natural language queries, and automated forecasting
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.30%2B-red)](https://streamlit.io/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.31%2B-red)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-yellow)](https://ai.google.dev/)
 
@@ -69,9 +69,9 @@ An **enterprise-grade business intelligence platform** that leverages Google's G
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.11 or higher
 - pip package manager
-- Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
+- Google Gemini API key ([Get one here](https://aistudio.google.com/welcome))
 
 ### Installation
 
@@ -211,7 +211,7 @@ Download in multiple formats:
 ## 🛠️ Tech Stack
 
 ### Core Technologies
-- **Python 3.8+**: Core programming language
+- **Python 3.11+**: Core programming language
 - **Streamlit**: Web application framework
 - **Pandas**: Data manipulation and analysis
 - **NumPy**: Numerical computing
@@ -354,8 +354,6 @@ pytest --cov=app tests/
 
 Sample datasets included in `tests/data/`:
 - `sales_sample.csv`
-- `healthcare_sample.csv`
-- `finance_sample.csv`
 
 ---
 
