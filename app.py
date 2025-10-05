@@ -1443,3 +1443,4 @@ def generate_finance_data_df(rows):
     
     return pd.DataFrame(data, columns=['transaction_id', 'timestamp', 'account_id', 'transaction_type', 'amount', 'balance', 'currency', 'merchant'])
 
+
