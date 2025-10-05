@@ -8,10 +8,40 @@ import io
 import google.generativeai as genai
 import json
 import os
+import sys
 from dotenv import load_dotenv
+import traceback
 
 # Load environment variables
 load_dotenv()
+
+# Configure error handling
+def handle_error(e: Exception):
+    """Handle exceptions and display user-friendly error messages"""
+    error_msg = str(e)
+    if "connection" in error_msg.lower():
+        st.error("❌ Connection error. Please check your internet connection.")
+    elif "permission" in error_msg.lower():
+        st.error("❌ Permission denied. Please check your API key and permissions.")
+    elif "not found" in error_msg.lower():
+        st.error("❌ Resource not found. Please check your file paths and configurations.")
+    else:
+        st.error(f"❌ An error occurred: {error_msg}")
+    
+    if os.getenv('STREAMLIT_DEBUG', '').lower() == 'true':
+        st.code(traceback.format_exc())
+
+# Startup health check
+try:
+    # Verify critical packages
+    import streamlit
+    import pandas
+    import plotly
+    import google.generativeai
+except ImportError as e:
+    st.error(f"❌ Required package not found: {str(e)}")
+    st.info("Please check requirements.txt and reinstall dependencies.")
+    sys.exit(1)
 
 # Page configuration
 st.set_page_config(
@@ -77,31 +107,57 @@ if 'chat_history' not in st.session_state:
 def configure_gemini(api_key, model_name='gemini-1.5-flash'):
     """Configure Gemini AI with API key"""
     if not api_key:
-        st.error("Please provide a Gemini API key.")
-        st.info("You can set it in the .env file or in Streamlit Cloud secrets.")
+        st.error("🔑 Please provide a Gemini API key.")
+        st.info("Set GEMINI_API_KEY in:\n- Local: .env file\n- Streamlit Cloud: Secrets management")
         return None
-        
+
     try:
+        # Clean the API key (remove any whitespace)
+        api_key = api_key.strip()
+        
+        # Configure the API
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(model_name)
+        
+        # Validate API key format
+        if len(api_key) < 20:  # Basic validation
+            st.error("🔑 Invalid API key format. Please check your key.")
+            return None
+            
+        # Initialize model with error handling
+        try:
+            model = genai.GenerativeModel(model_name)
+        except Exception as e:
+            st.error(f"❌ Error initializing model: {str(e)}")
+            st.info(f"Make sure '{model_name}' is a valid model name.")
+            return None
         
         # Test the connection with a timeout
         try:
-            test = model.generate_content("Hello")
+            test = model.generate_content("Test connection")
+            st.success("✅ Successfully connected to Gemini AI")
             return model
         except Exception as e:
-            if "quota" in str(e).lower():
-                st.error("API quota exceeded. Please check your billing settings.")
-            elif "permission" in str(e).lower():
-                st.error("API key doesn't have proper permissions. Please check your API key settings.")
+            error_msg = str(e).lower()
+            if "quota" in error_msg:
+                st.error("💰 API quota exceeded. Please check your billing settings.")
+            elif "permission" in error_msg or "unauthorized" in error_msg:
+                st.error("🚫 API key doesn't have proper permissions.")
+                st.info("Please verify your API key and ensure it has the necessary permissions.")
+            elif "timeout" in error_msg:
+                st.error("⏱️ Connection timeout. Please try again.")
+                st.info("This might be a temporary issue with the Gemini AI service.")
             else:
-                st.error(f"Error testing connection: {str(e)}")
-            st.info("Try: 1) Check API key, 2) Enable billing, 3) Use gemini-1.5-flash")
+                st.error(f"❌ Error testing connection: {str(e)}")
+            
+            st.info("Troubleshooting steps:\n"
+                   "1. Verify API key is correct\n"
+                   "2. Check billing is enabled\n"
+                   "3. Ensure you're using a supported model\n"
+                   "4. Check your internet connection")
             return None
             
     except Exception as e:
-        st.error(f"Error configuring Gemini: {str(e)}")
-        st.info("Please make sure you have a valid API key and the service is available.")
+        handle_error(e)  # Use our central error handler
         return None
 
 # Generate AI insights
