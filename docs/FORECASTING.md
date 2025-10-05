@@ -769,8 +769,8 @@ Check:
 ## Additional Resources
 
 ### Learn More
-- 📖 [AI_TUTORIAL.md](./AI_TUTORIAL.md) - AI features overview
-- 📊 [GETTING_STARTED.md](./GETTING_STARTED.md) - Basic setup
+- 📖 [AI_TUTORIAL.md](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/AI_TUTORIAL.md) - AI features overview
+- 📊 [GETTING_STARTED.md](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/GETTING_STARTED.md) - Basic setup
 - 🎬 [Video Tutorial](https://youtube.com/watch?v=xxx) - Visual walkthrough
 - 📝 [Blog Post](https://analyticsbyshanikwa.com/forecasting) - Deep dive
 
