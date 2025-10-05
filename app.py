@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import io
 import google.generativeai as genai
 import json
-import streamlit.components.v1 as components
 
 # Page configuration
 st.set_page_config(
@@ -1411,6 +1410,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
