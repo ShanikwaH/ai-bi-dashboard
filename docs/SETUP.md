@@ -751,7 +751,7 @@ docker logs <container-id>
 If you encounter issues:
 
 1. **Check Documentation**
-   - [Getting Started Guide](./GETTING_STARTED.md)
+   - [Getting Started Guide](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/GETTING_STARTED.md)
    - [API Documentation](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/API.md)
    - [Security Guide](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/SECURITY.md)
 
