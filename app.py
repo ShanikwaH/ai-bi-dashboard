@@ -1,19 +1,41 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import io
-import google.generativeai as genai
-import json
 import os
 import sys
 from dotenv import load_dotenv
-import traceback
 
-# Load environment variables
+# Initialize environment before other imports
 load_dotenv()
+
+# Configure Streamlit page settings early
+st.set_page_config(
+    page_title="AI-Powered Business Intelligence Dashboard",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://github.com/yourusername/ai-bi-dashboard/issues',
+        'Report a bug': "https://github.com/yourusername/ai-bi-dashboard/issues",
+        'About': "# AI-Powered BI Dashboard\nThis is a Streamlit app that provides AI-powered business intelligence insights."
+    }
+)
+
+# Show loading message
+with st.spinner('Loading application components...'):
+    # Import other dependencies
+    try:
+        import pandas as pd
+        import numpy as np
+        import plotly.express as px
+        import plotly.graph_objects as go
+        from datetime import datetime, timedelta
+        import io
+        import google.generativeai as genai
+        import json
+        import traceback
+    except Exception as e:
+        st.error(f"❌ Failed to import required packages: {str(e)}")
+        st.info("Please make sure all dependencies are installed correctly.")
+        st.stop()
 
 # Configure error handling
 def handle_error(e: Exception):
@@ -90,74 +112,145 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Initialize session state with proper resource management
+def initialize_session_state():
+    """Initialize session state variables with proper defaults"""
+    if 'initialized' not in st.session_state:
+        # Data management
+        st.session_state.df = None
+        st.session_state.data_timestamp = None
+        
+        # API configuration
+        st.session_state.gemini_api_key = os.getenv('GEMINI_API_KEY')
+        st.session_state.model_name = 'gemini-1.5-flash'
+        st.session_state.gemini_model = None
+        
+        # Chat and history management
+        st.session_state.chat_history = []
+        st.session_state.max_history = 50  # Limit chat history
+        
+        # Performance monitoring
+        st.session_state.last_request_time = None
+        st.session_state.request_count = 0
+        
+        # Error tracking
+        st.session_state.error_count = 0
+        st.session_state.last_error = None
+        
+        # Mark as initialized
+        st.session_state.initialized = True
+
 # Initialize session state
-if 'df' not in st.session_state:
-    st.session_state.df = None
-if 'gemini_api_key' not in st.session_state:
-    # Try to get API key from environment variables
-    st.session_state.gemini_api_key = os.getenv('GEMINI_API_KEY')
-if 'gemini_model' not in st.session_state:
-    st.session_state.gemini_model = None
-if 'model_name' not in st.session_state:
-    st.session_state.model_name = 'gemini-1.5-flash'  # Set default model
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
+initialize_session_state()
+
+# Resource cleanup function
+def cleanup_resources():
+    """Clean up resources when needed"""
+    if st.session_state.df is not None and st.session_state.df.size > 1000000:  # 1M cells
+        st.session_state.df = None  # Clear large dataframes
+        
+    if len(st.session_state.chat_history) > st.session_state.max_history:
+        # Keep only recent history
+        st.session_state.chat_history = st.session_state.chat_history[-st.session_state.max_history:]
+
+# Clean up resources periodically
+if st.session_state.request_count % 10 == 0:  # Every 10 requests
+    cleanup_resources()
 
 # Configure Gemini AI
+from functools import wraps
+import time
+import random
+
+def retry_with_backoff(retries=3, backoff_in_seconds=1):
+    """Retry decorator with exponential backoff"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            x = 0
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if x == retries:
+                        raise e
+                    sleep_time = (backoff_in_seconds * 2 ** x + 
+                                random.uniform(0, 1))
+                    time.sleep(sleep_time)
+                    x += 1
+        return wrapper
+    return decorator
+
+@retry_with_backoff(retries=3, backoff_in_seconds=1)
 def configure_gemini(api_key, model_name='gemini-1.5-flash'):
-    """Configure Gemini AI with API key"""
+    """Configure Gemini AI with API key and retry logic"""
     if not api_key:
         st.error("🔑 Please provide a Gemini API key.")
         st.info("Set GEMINI_API_KEY in:\n- Local: .env file\n- Streamlit Cloud: Secrets management")
         return None
 
     try:
-        # Clean the API key (remove any whitespace)
+        # Update request tracking
+        st.session_state.request_count += 1
+        st.session_state.last_request_time = time.time()
+        
+        # Clean and validate API key
         api_key = api_key.strip()
-        
-        # Configure the API
-        genai.configure(api_key=api_key)
-        
-        # Validate API key format
-        if len(api_key) < 20:  # Basic validation
+        if len(api_key) < 20:
             st.error("🔑 Invalid API key format. Please check your key.")
             return None
             
-        # Initialize model with error handling
-        try:
-            model = genai.GenerativeModel(model_name)
-        except Exception as e:
-            st.error(f"❌ Error initializing model: {str(e)}")
-            st.info(f"Make sure '{model_name}' is a valid model name.")
-            return None
+        # Configure the API with retry logic
+        max_retries = 3
+        retry_count = 0
         
-        # Test the connection with a timeout
-        try:
-            test = model.generate_content("Test connection")
-            st.success("✅ Successfully connected to Gemini AI")
-            return model
-        except Exception as e:
-            error_msg = str(e).lower()
-            if "quota" in error_msg:
-                st.error("💰 API quota exceeded. Please check your billing settings.")
-            elif "permission" in error_msg or "unauthorized" in error_msg:
-                st.error("🚫 API key doesn't have proper permissions.")
-                st.info("Please verify your API key and ensure it has the necessary permissions.")
-            elif "timeout" in error_msg:
-                st.error("⏱️ Connection timeout. Please try again.")
-                st.info("This might be a temporary issue with the Gemini AI service.")
-            else:
-                st.error(f"❌ Error testing connection: {str(e)}")
-            
-            st.info("Troubleshooting steps:\n"
-                   "1. Verify API key is correct\n"
-                   "2. Check billing is enabled\n"
-                   "3. Ensure you're using a supported model\n"
-                   "4. Check your internet connection")
-            return None
-            
+        while retry_count < max_retries:
+            try:
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel(model_name)
+                
+                # Test connection with timeout
+                test = model.generate_content(
+                    "Test connection",
+                    safety_settings={"HARASSMENT": "block_none", "HATE_SPEECH": "block_none"}
+                )
+                
+                st.success("✅ Successfully connected to Gemini AI")
+                return model
+                
+            except Exception as e:
+                retry_count += 1
+                error_msg = str(e).lower()
+                
+                if retry_count < max_retries:
+                    st.warning(f"⚠️ Attempt {retry_count}/{max_retries} failed. Retrying...")
+                    time.sleep(2 ** retry_count)  # Exponential backoff
+                    continue
+                
+                # Handle specific errors
+                if "quota" in error_msg:
+                    st.error("💰 API quota exceeded. Please check your billing settings.")
+                elif "permission" in error_msg or "unauthorized" in error_msg:
+                    st.error("🚫 API key doesn't have proper permissions.")
+                elif "timeout" in error_msg:
+                    st.error("⏱️ Connection timeout. Please try again later.")
+                else:
+                    st.error(f"❌ Connection error: {str(e)}")
+                
+                st.info("Troubleshooting steps:\n"
+                       "1. Verify API key is correct\n"
+                       "2. Check billing is enabled\n"
+                       "3. Ensure you're using a supported model\n"
+                       "4. Check your internet connection")
+                
+                # Update error tracking
+                st.session_state.error_count += 1
+                st.session_state.last_error = str(e)
+                
+                return None
+                
     except Exception as e:
-        handle_error(e)  # Use our central error handler
+        handle_error(e)
         return None
 
 # Generate AI insights
