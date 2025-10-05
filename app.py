@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import io
 import google.generativeai as genai
 import json
+from pathlib import Path
 
 # Page configuration
 st.set_page_config(
@@ -205,23 +206,38 @@ def generate_automated_report(df):
 
 # Helper Functions
 def generate_sample_data():
-    """Generate sample sales data for demonstration"""
+    "Generate sample sales data for demonstration"
     np.random.seed(42)
-    dates = pd.date_range(start='2022-01-01', end='2024-12-31', freq='D')
+def generate_sample_data():
+    "Generate sample healthcare data for demonstration"
+    np.random.seed(42)
+def generate_sample_data():
+    "Generate sample finance data for demonstration"
+    np.random.seed(42)
+# Load data
+@st.cache_data
+def load_data():
+    "Load all CSV files from tests/data directory"
+    data_dir = Path(__file__).parent.parent / 'tests' / 'data'
     
-    df = pd.DataFrame({
-        'Date': dates,
-        'Revenue': np.random.normal(50000, 15000, len(dates)).cumsum() / 100 + 10000,
-        'Units_Sold': np.random.poisson(100, len(dates)),
-        'Region': np.random.choice(['North', 'South', 'East', 'West'], len(dates)),
-        'Product_Category': np.random.choice(['Electronics', 'Clothing', 'Food', 'Home'], len(dates)),
-        'Customer_Satisfaction': np.random.uniform(3.5, 5.0, len(dates))
-    })
+    sales_df = pd.read_csv(data_dir / 'sales_sample.csv')
+    healthcare_df = pd.read_csv(data_dir / 'healthcare_sample.csv')
+    finance_df = pd.read_csv(data_dir / 'finance_sample.csv')
     
-    df['Revenue'] = df['Revenue'].round(2)
-    df['Customer_Satisfaction'] = df['Customer_Satisfaction'].round(2)
+    # Convert date columns
+    sales_df['date'] = pd.to_datetime(sales_df['date'])
+    healthcare_df['admission_date'] = pd.to_datetime(healthcare_df['admission_date'])
+    healthcare_df['discharge_date'] = pd.to_datetime(healthcare_df['discharge_date'])
+    finance_df['timestamp'] = pd.to_datetime(finance_df['timestamp'])
     
-    return df
+    return sales_df, healthcare_df, finance_df
+
+# Load data
+try:
+    sales_df, healthcare_df, finance_df = load_data()
+except FileNotFoundError:
+    st.error("⚠️ Data files not found! Please run generate_test_data.py first.")
+    st.stop()
 
 def calculate_kpis(df, date_col, value_col):
     """Calculate key performance indicators"""
@@ -1218,3 +1234,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
