@@ -17,8 +17,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Google Analytics
-components.html("""
+# Google Analytics - inject directly into page
+st.markdown("""
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-C9N4L7M92T"></script>
 <script>
@@ -28,7 +28,7 @@ components.html("""
 
   gtag('config', 'G-C9N4L7M92T');
 </script>
-""", height=0)
+""", unsafe_allow_html=True)
 
 # Custom CSS
 st.markdown("""
@@ -1411,6 +1411,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
