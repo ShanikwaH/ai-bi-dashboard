@@ -199,9 +199,9 @@ We welcome community input! Here's how you can influence the roadmap:
 We measure our progress with these metrics:
 
 ### User Adoption
-- Active users: Target 10,000 by Q4 2025
+- Active users: Target 10,000 by Q4 2026
 - Dashboard creations: 50,000+ by year-end
-- Community contributors: 100+ by Q2 2025
+- Community contributors: 100+ by Q2 2026
 
 ### Performance
 - Dashboard load time: <2 seconds
