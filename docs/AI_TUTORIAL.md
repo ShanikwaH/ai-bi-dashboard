@@ -303,9 +303,9 @@ Anomaly Report:
 ┌─────────────┬──────────────┬──────────┬────────────┐
 │ Date        │ Metric Value │ Expected │ Deviation  │
 ├─────────────┼──────────────┼──────────┼────────────┤
-│ Oct 15, 2024│ $234,500     │ $68,000  │ +245% 🔴   │
-│ Sep 3, 2024 │ $12,300      │ $67,500  │ -82%  🔴   │
-│ Aug 22, 2024│ $98,700      │ $70,200  │ +41%  🟡   │
+│ Oct 15, 2025│ $234,500     │ $68,000  │ +245% 🔴   │
+│ Sep 3, 2025 │ $12,300      │ $67,500  │ -82%  🔴   │
+│ Aug 22, 2025│ $98,700      │ $70,200  │ +41%  🟡   │
 └─────────────┴──────────────┴──────────┴────────────┘
 ```
 
@@ -322,12 +322,12 @@ Setup:
 
 Results:
 🔴 Critical Anomaly Detected:
-   Date: December 15, 2024
+   Date: December 15, 2025
    Sales: $345,000 (expected: $75,000)
    Possible cause: Black Friday promotion?
    
 🟡 Warning Anomaly:
-   Date: November 3, 2024
+   Date: November 3, 2025
    Sales: $32,000 (expected: $68,000)
    Possible cause: Website downtime?
 ```
@@ -476,10 +476,10 @@ Feature Importance:
 ┌────────────┬───────────┬─────────────┬─────────────┐
 │ Date       │ Forecast  │ Lower Bound │ Upper Bound │
 ├────────────┼───────────┼─────────────┼─────────────┤
-│ Nov 1, 2024│ $67,500   │ $62,100     │ $72,900     │
-│ Nov 2, 2024│ $68,200   │ $62,700     │ $73,700     │
+│ Nov 1, 2025│ $67,500   │ $62,100     │ $72,900     │
+│ Nov 2, 2025│ $68,200   │ $62,700     │ $73,700     │
 │ ...        │ ...       │ ...         │ ...         │
-│ Nov 30,2024│ $75,300   │ $68,800     │ $81,800     │
+│ Nov 30,2025│ $75,300   │ $68,800     │ $81,800     │
 └────────────┴───────────┴─────────────┴─────────────┘
 
 Total 30-Day Forecast: $2,145,000
@@ -659,14 +659,14 @@ Export Options:
 ## Next Steps
 
 ### Continue Learning
-- 📖 Read [FORECASTING.md](./FORECASTING.md) for advanced forecasting
+- 📖 Read [FORECASTING.md](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/FORECASTING.md) for advanced forecasting
 - 🎬 Watch [AI Features Tutorial Video](https://youtube.com/watch?v=xxx)
 - 📝 Read [Building AI-Powered Dashboards](https://medium.com/@shanikwa.lhaynes/xxx)
 
 ### Get Support
-- 💬 [Community Discussions](https://github.com/ai-bi-dashboard/discussions)
-- 📧 [Email Support](mailto:nikki.19972010@hotmail.com)
-- 📚 [Full Documentation](./docs/)
+- 💬 [Community Discussions](https://github.com/ShanikwaH/ai-bi-dashboard/discussions)
+- 📧 [Email Support](mailto:ai-support@streamlit-bi.com)
+- 📚 [Full Documentation](https://github.com/ShanikwaH/ai-bi-dashboard/blob/main/docs/docs)
 
 ---
 
