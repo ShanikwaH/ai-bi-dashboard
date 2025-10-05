@@ -17,18 +17,22 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Google Analytics - inject directly into page
-st.markdown("""
-<!-- Google tag (gtag.js) -->
+# Google Analytics - must use components.html
+components.html("""
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-C9N4L7M92T"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-C9N4L7M92T');
+  
+  // Track page views
+  gtag('event', 'page_view', {
+    page_path: window.parent.location.pathname,
+    page_location: window.parent.location.href
+  });
 </script>
-""", unsafe_allow_html=True)
+""", height=0, width=0)
 
 # Custom CSS
 st.markdown("""
@@ -1411,6 +1415,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
