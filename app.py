@@ -1,6 +1,6 @@
 import streamlit as st
 
-# Page configuration - MUST be first!
+# Page configuration - MUST BE IMMEDIATELY AFTER importing streamlit
 st.set_page_config(
     page_title="AI-Powered Business Intelligence Dashboard",
     page_icon="🤖",
@@ -8,13 +8,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Now import everything else
+# NOW import everything else
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import io
+import google.generativeai as genai
 import json
 
 # Graceful Gemini import
@@ -1405,4 +1406,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
