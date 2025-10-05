@@ -775,9 +775,9 @@ Check:
 - 📝 [Blog Post](https://analyticsbyshanikwa.com/forecasting) - Deep dive
 
 ### Support
-- 💬 [Community Forum](https://github.com/ai-bi-dashboard/discussions)
-- 📧 [Email Support](mailto:nikki.19972010@hotmail.com)
-- 📚 [Full Documentation](./docs/)
+- 💬 [Community Forum](https://github.com/ShanikwaH/ai-bi-dashboard/discussions)
+- 📧 [Email Support](mailto:support@streamlit-bi.com)
+- 📚 [Full Documentation](https://claude.ai/chat/docs/)
 
 ---
 
