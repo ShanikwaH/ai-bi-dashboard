@@ -17,6 +17,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Google Analytics
 components.html("""
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-C9N4L7M92T"></script>
@@ -1410,5 +1411,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
