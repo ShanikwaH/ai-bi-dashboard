@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import io
 import google.generativeai as genai
 import json
-import streamlit.components.v1 as components
 
 # Page configuration
 st.set_page_config(
@@ -16,23 +15,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Google Analytics - must use components.html
-components.html("""
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-C9N4L7M92T"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-C9N4L7M92T');
-  
-  // Track page views
-  gtag('event', 'page_view', {
-    page_path: window.parent.location.pathname,
-    page_location: window.parent.location.href
-  });
-</script>
-""", height=0, width=0)
 
 # Custom CSS
 st.markdown("""
@@ -1415,10 +1397,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-
-
-
-
-
