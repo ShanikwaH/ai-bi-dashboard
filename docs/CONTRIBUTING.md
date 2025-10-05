@@ -649,7 +649,7 @@ Exceptional contributors may be:
 ## ❓ Questions?
 
 - 💬 **Discussions**: Ask general questions
-- 📧 **Email**: your.email@example.com
+- 📧 **Email**: nikki.19972010@hotmail.com
 - 🐛 **Issues**: Technical questions about bugs
 
 ---
