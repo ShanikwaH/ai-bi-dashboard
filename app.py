@@ -1,13 +1,67 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
 import os
-import sys
 from dotenv import load_dotenv
 
-# Basic error handling function
-def show_error(title, message):
-    st.error(f"❌ {title}")
-    st.info(message)
-    return None
+# Load environment variables
+load_dotenv()
+
+# Page configuration
+st.set_page_config(
+    page_title="AI-Powered BI Dashboard",
+    page_icon="📊",
+    layout="wide"
+)
+
+# Initialize session state
+if 'data' not in st.session_state:
+    st.session_state.data = None
+
+# Main app title
+st.title("AI-Powered Business Intelligence Dashboard")
+
+try:
+    # File upload section
+    uploaded_file = st.file_uploader("Upload your data file (CSV, Excel)", type=['csv', 'xlsx'])
+
+    if uploaded_file is not None:
+        try:
+            # Load the data
+            if uploaded_file.name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file)
+            else:
+                df = pd.read_excel(uploaded_file)
+            
+            st.session_state.data = df
+            
+            # Show data preview
+            st.subheader("Data Preview")
+            st.dataframe(df.head())
+            
+            # Basic statistics
+            st.subheader("Data Statistics")
+            st.write(df.describe())
+            
+            # Simple visualization
+            if len(df.select_dtypes(include=[np.number]).columns) > 0:
+                numeric_column = st.selectbox(
+                    "Select a numeric column for visualization",
+                    df.select_dtypes(include=[np.number]).columns
+                )
+                
+                fig = px.histogram(df, x=numeric_column)
+                st.plotly_chart(fig, use_container_width=True)
+                
+        except Exception as e:
+            st.error(f"Error loading file: {str(e)}")
+            st.session_state.data = None
+            
+except Exception as e:
+    st.error(f"An error occurred: {str(e)}")
+    if os.getenv('STREAMLIT_DEBUG'):
+        st.write("Debug info:", e.__class__.__name__)
 
 # Initialize environment variables
 try:
