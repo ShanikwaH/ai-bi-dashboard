@@ -46,6 +46,7 @@ try:
         initial_sidebar_state="expanded"
     )
 except Exception as e:
+    # Crucial: Must be present to close the try block.
     st.write("Error setting page config. Continuing with defaults.")
 
 # Check and import required packages
@@ -1638,6 +1639,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
