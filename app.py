@@ -3,21 +3,67 @@ import os
 import sys
 from dotenv import load_dotenv
 
-# Initialize environment before other imports
-load_dotenv()
+# Basic error handling function
+def show_error(title, message):
+    st.error(f"❌ {title}")
+    st.info(message)
+    return None
 
-# Configure Streamlit page settings early
-st.set_page_config(
-    page_title="AI-Powered Business Intelligence Dashboard",
-    page_icon="🤖",
-    layout="wide",
-    initial_sidebar_state="expanded",
-    menu_items={
-        'Get Help': 'https://github.com/yourusername/ai-bi-dashboard/issues',
-        'Report a bug': "https://github.com/yourusername/ai-bi-dashboard/issues",
-        'About': "# AI-Powered BI Dashboard\nThis is a Streamlit app that provides AI-powered business intelligence insights."
+# Initialize environment variables
+try:
+    load_dotenv()
+except Exception as e:
+    show_error("Environment Error", f"Failed to load environment variables: {str(e)}")
+
+# Basic streamlit config
+try:
+    st.set_page_config(
+        page_title="AI-Powered BI Dashboard",
+        page_icon="📊",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+except Exception as e:
+    st.write("Error setting page config. Continuing with defaults.")
+
+# Check and import required packages
+def import_dependencies():
+    required_packages = {
+        'pandas': 'pd',
+        'numpy': 'np',
+        'plotly.express': 'px',
+        'plotly.graph_objects': 'go',
+        'google.generativeai': 'genai'
     }
-)
+    
+    imported = {}
+    missing = []
+    
+    for package, alias in required_packages.items():
+        try:
+            imported[alias] = __import__(package.split('.')[0], fromlist=[package])
+            if '.' in package:
+                for submodule in package.split('.')[1:]:
+                    imported[alias] = getattr(imported[alias], submodule)
+        except ImportError:
+            missing.append(package)
+            
+    if missing:
+        show_error(
+            "Missing Dependencies",
+            f"The following packages are required but not installed: {', '.join(missing)}\n"
+            "Please make sure all dependencies are installed correctly."
+        )
+        st.stop()
+        
+    return imported
+
+# Import dependencies
+with st.spinner("Loading dependencies..."):
+    deps = import_dependencies()
+    
+# Make dependencies available in global scope
+globals().update(deps)
 
 # Show loading message
 with st.spinner('Loading application components...'):
@@ -73,16 +119,29 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
-st.markdown("""
-    <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
+# Main application function
+def main():
+    """Main application entry point"""
+    try:
+        # Initialize session state
+        initialize_session_state()
+        
+        # Perform health check
+        if not st.session_state.health_check_passed:
+            with st.spinner("Performing system health check..."):
+                if not check_system_health():
+                    st.stop()
+        
+        # Custom CSS
+        st.markdown("""
+            <style>
+            .main-header {
+                font-size: 2.5rem;
+                font-weight: bold;
+                color: #1f77b4;
+                text-align: center;
+                margin-bottom: 2rem;
+            }
     .ai-response {
         background-color: #f0f8ff;
         padding: 1.5rem;
@@ -116,29 +175,38 @@ st.markdown("""
 def initialize_session_state():
     """Initialize session state variables with proper defaults"""
     if 'initialized' not in st.session_state:
-        # Data management
-        st.session_state.df = None
-        st.session_state.data_timestamp = None
-        
-        # API configuration
-        st.session_state.gemini_api_key = os.getenv('GEMINI_API_KEY')
-        st.session_state.model_name = 'gemini-1.5-flash'
-        st.session_state.gemini_model = None
-        
-        # Chat and history management
-        st.session_state.chat_history = []
-        st.session_state.max_history = 50  # Limit chat history
-        
-        # Performance monitoring
-        st.session_state.last_request_time = None
-        st.session_state.request_count = 0
-        
-        # Error tracking
-        st.session_state.error_count = 0
-        st.session_state.last_error = None
-        
-        # Mark as initialized
-        st.session_state.initialized = True
+        try:
+            # Data management
+            st.session_state.df = None
+            st.session_state.data_timestamp = None
+            
+            # API configuration
+            api_key = os.getenv('GEMINI_API_KEY')
+            if not api_key:
+                st.warning("🔑 No Gemini API key found. Please add it to your environment variables or secrets.")
+            st.session_state.gemini_api_key = api_key
+            st.session_state.model_name = 'gemini-1.5-flash'
+            st.session_state.gemini_model = None
+            
+            # Chat and history management
+            st.session_state.chat_history = []
+            st.session_state.max_history = 50
+            
+            # System state
+            st.session_state.is_ready = False
+            st.session_state.startup_complete = False
+            st.session_state.health_check_passed = False
+            
+            # Mark as initialized
+            st.session_state.initialized = True
+            
+        except Exception as e:
+            show_error(
+                "Initialization Error",
+                f"Failed to initialize application state: {str(e)}\n"
+                "Please refresh the page to try again."
+            )
+            st.stop()
 
 # Initialize session state
 initialize_session_state()
@@ -180,6 +248,26 @@ def retry_with_backoff(retries=3, backoff_in_seconds=1):
                     x += 1
         return wrapper
     return decorator
+
+def check_system_health():
+    """Perform system health check"""
+    try:
+        # Check memory usage
+        import psutil
+        memory = psutil.Process().memory_info().rss / 1024 / 1024  # MB
+        if memory > 1000:  # 1GB
+            st.warning("⚠️ High memory usage detected. Performance may be affected.")
+        
+        # Verify environment
+        if not os.getenv('GEMINI_API_KEY'):
+            st.warning("⚠️ Gemini API key not found in environment.")
+        
+        # Mark health check as passed
+        st.session_state.health_check_passed = True
+        return True
+    except Exception as e:
+        show_error("Health Check Failed", str(e))
+        return False
 
 @retry_with_backoff(retries=3, backoff_in_seconds=1)
 def configure_gemini(api_key, model_name='gemini-1.5-flash'):
