@@ -9,11 +9,14 @@ import google.generativeai as genai
 import json
 import os
 import sys
-from dotenv import load_dotenv
 import traceback
 
-# Load environment variables
-load_dotenv()
+# Optional: Load environment variables if dotenv is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv is not required to run the app
 
 # Configure error handling
 def handle_error(e: Exception):
