@@ -1,34 +1,6 @@
 import streamlit as st
 
-# Basic page configuration
-st.set_page_config(
-    page_title="BI Dashboard",
-    page_icon="📊",
-    layout="wide"
-)
-
-# Health check indicator
-if 'health_check' not in st.session_state:
-    st.session_state.health_check = True
-    
-# Main app title
-st.title("Business Intelligence Dashboard")
-
-# Add some basic content
-st.write("Welcome to the dashboard!")
-
-# Add a simple counter to test interactivity
-if 'count' not in st.session_state:
-    st.session_state.count = 0
-
-if st.button('Click me!'):
-    st.session_state.count += 1
-
-st.write('Count:', st.session_state.count)
-
-# Add health check response
-if st.session_state.health_check:
-    st.success("✅ Application is running properly")
+st.write("Hello World!")
 
 # Initialize environment variables
 try:
