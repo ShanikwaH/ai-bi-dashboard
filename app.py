@@ -1,21 +1,18 @@
+"""
+Minimal Streamlit application
+"""
 import streamlit as st
-import os
 
-# Force the server to listen on 0.0.0.0
-os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
-os.environ['STREAMLIT_SERVER_PORT'] = '8501'
-os.environ['STREAMLIT_SERVER_HEADLESS'] = 'true'
+def main():
+    """Main function"""
+    st.title("Hello Streamlit!")
+    st.write("This is a test.")
+    
+    if st.button("Test Button"):
+        st.success("✅ Everything is working!")
 
-# Simple page config
-st.set_page_config(
-    page_title="Simple App",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
-
-# Display content
-st.markdown("# Welcome to the Dashboard")
-st.write("This is a test page.")
+if __name__ == "__main__":
+    main()
 
 # Initialize environment variables
 try:
