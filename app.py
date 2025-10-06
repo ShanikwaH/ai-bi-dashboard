@@ -1,6 +1,21 @@
 import streamlit as st
+import os
 
-st.write("Hello World!")
+# Force the server to listen on 0.0.0.0
+os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
+os.environ['STREAMLIT_SERVER_PORT'] = '8501'
+os.environ['STREAMLIT_SERVER_HEADLESS'] = 'true'
+
+# Simple page config
+st.set_page_config(
+    page_title="Simple App",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# Display content
+st.markdown("# Welcome to the Dashboard")
+st.write("This is a test page.")
 
 # Initialize environment variables
 try:
