@@ -1,4 +1,6 @@
-# 1. Standard Library Imports
+# =======================================================
+# 1. Standard Library Imports (Must be at the top)
+# =======================================================
 import os
 import sys
 import json
@@ -9,27 +11,127 @@ import io
 from functools import wraps
 from datetime import datetime, timedelta
 
-# 2. Third-Party Library Imports (Must be in requirements.txt)
+# =======================================================
+# 2. Third-Party Library Imports (Must be at the top)
+# =======================================================
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from dotenv import load_dotenv # Used for os.getenv() calls
+from dotenv import load_dotenv
 import google.generativeai as genai
-import psutil # For system health check
+import psutil
 
+# =======================================================
+# 3. Helper Function for show_error (Needed early)
+# =======================================================
+# Define this small helper function early, as it's used in the load_dotenv block
+def show_error(title, message):
+    """Basic error display, handles when st.error might not be ready"""
+    print(f"ERROR: {title} - {message}", file=sys.stderr)
+    try:
+        st.error(f"❌ {title}: {message}")
+    except:
+        pass # Streamlit not fully initialized yet
+
+# =======================================================
+# 4. Environment & Streamlit Config (Executable Code)
+# =======================================================
+
+# Initialize environment variables
+try:
+    load_dotenv()
+except Exception as e:
+    show_error("Environment Error", f"Failed to load environment variables: {str(e)}")
+
+# Basic streamlit config (must be called first, before st.write/st.button etc.)
+try:
+    st.set_page_config(
+        page_title="AI-Powered BI Dashboard",
+        page_icon="📊",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+except Exception as e:
+    # Crucial: Must be present to close the try block.
+    # Note: Streamlit usually handles repeated set_page_config calls, 
+    # but the first one needs to be early.
+    st.write("Error setting page config. Continuing with defaults.")
+
+# =======================================================
+# 5. Core Initialization Functions
+# =======================================================
+
+# Re-define initialize_session_state here, un-indented!
+def initialize_session_state():
+    """Initialize session state variables with proper defaults"""
+    if 'initialized' not in st.session_state:
+        try:
+            # ... (rest of your initialize_session_state function) ...
+            st.session_state.df = None
+            st.session_state.data_timestamp = None
+            
+            api_key = os.getenv('GEMINI_API_KEY')
+            # ... (rest of API setup) ...
+            st.session_state.gemini_api_key = api_key
+            st.session_state.model_name = 'gemini-1.5-flash'
+            st.session_state.gemini_model = None
+            
+            # ... (rest of history, state, etc.) ...
+            st.session_state.chat_history = []
+            st.session_state.max_history = 50
+            st.session_state.is_ready = False
+            st.session_state.health_check_passed = False
+            st.session_state.initialized = True
+            
+        except Exception as e:
+            # Must use the defined show_error or st.error
+            st.error(
+                f"❌ Failed to initialize application state: {str(e)}\n"
+                "Please refresh the page to try again."
+            )
+            st.stop()
+            
+# Initialize session state immediately after definition
+initialize_session_state() 
+
+# =======================================================
+# 6. Remaining Functions (handle_error, check_system_health, etc.)
+# =======================================================
+# Place all other helper functions (handle_error, check_system_health, retry_with_backoff, etc.)
+# here, ensuring they are all UNINDENTED at the top level.
+# NOTE: Make sure to remove the DUPLICATE DEFINITION of 'main()' around line 90
+# and the other duplicate set_page_config near it.
+
+def handle_error(e: Exception):
+    # ... (content of your handle_error function) ...
+    pass # Placeholder
+
+# ... (other functions like cleanup_resources, check_system_health, etc.) ...
+
+# =======================================================
+# 7. Main Application Logic
+# =======================================================
 def main():
-    """Main function"""
-    st.title("Hello Streamlit!")
-    st.write("This is a test.")
+    """Main application entry point. This is the single, final main definition."""
+    # The content of your *second* main() function goes here, starting with:
+    # if not st.session_state.health_check_passed:
+    # ...
+    
+    # Streamlit Page Logic (if page == "🏠 Home":, elif page == "📁 Data Upload":, etc.)
+    # This logic should be moved into a function and called from main(), 
+    # or placed *after* the if __name__ == "__main__": block, but NOT inside a function 
+    # that is never called (which can happen with the module-level 'if page == ...' blocks).
+    
+    # For a clean app, the page logic should NOT be placed at the top level outside of functions,
+    # as Streamlit re-runs the entire file.
 
-    if st.button("Test Button"):
-        st.success("✅ Everything is working!")
-
+# =======================================================
+# 8. Main Execution Block (Must be at the bottom)
+# =======================================================
 if __name__ == "__main__":
     main()
-# ... rest of the file ...
 
 # Initialize environment variables
 try:
@@ -1639,6 +1741,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
