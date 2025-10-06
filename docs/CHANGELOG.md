@@ -424,7 +424,7 @@ We follow [Semantic Versioning](https://semver.org/):
 - [Issues](https://github.com/ShanikwaH/ai-bi-dashboard/issues)
 - [Discussions](https://github.com/ShanikwaH/ai-bi-dashboard/discussions)
 - [Releases](https://github.com/ShanikwaH/ai-bi-dashboard/releases)
-- [Live Demo](https://ai-bi-dashboard-qzvssu3a95ypcwpowqm4nd.streamlit.app)
+- [Live Demo](https://ai-bi-dashboard-yajxi5tkqxsrpguy7yh8zu.streamlit.app)
 
 ---
 
