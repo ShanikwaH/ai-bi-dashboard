@@ -1,67 +1,34 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Page configuration
+# Basic page configuration
 st.set_page_config(
-    page_title="AI-Powered BI Dashboard",
+    page_title="BI Dashboard",
     page_icon="📊",
     layout="wide"
 )
 
-# Initialize session state
-if 'data' not in st.session_state:
-    st.session_state.data = None
-
+# Health check indicator
+if 'health_check' not in st.session_state:
+    st.session_state.health_check = True
+    
 # Main app title
-st.title("AI-Powered Business Intelligence Dashboard")
+st.title("Business Intelligence Dashboard")
 
-try:
-    # File upload section
-    uploaded_file = st.file_uploader("Upload your data file (CSV, Excel)", type=['csv', 'xlsx'])
+# Add some basic content
+st.write("Welcome to the dashboard!")
 
-    if uploaded_file is not None:
-        try:
-            # Load the data
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file)
-            else:
-                df = pd.read_excel(uploaded_file)
-            
-            st.session_state.data = df
-            
-            # Show data preview
-            st.subheader("Data Preview")
-            st.dataframe(df.head())
-            
-            # Basic statistics
-            st.subheader("Data Statistics")
-            st.write(df.describe())
-            
-            # Simple visualization
-            if len(df.select_dtypes(include=[np.number]).columns) > 0:
-                numeric_column = st.selectbox(
-                    "Select a numeric column for visualization",
-                    df.select_dtypes(include=[np.number]).columns
-                )
-                
-                fig = px.histogram(df, x=numeric_column)
-                st.plotly_chart(fig, use_container_width=True)
-                
-        except Exception as e:
-            st.error(f"Error loading file: {str(e)}")
-            st.session_state.data = None
-            
-except Exception as e:
-    st.error(f"An error occurred: {str(e)}")
-    if os.getenv('STREAMLIT_DEBUG'):
-        st.write("Debug info:", e.__class__.__name__)
+# Add a simple counter to test interactivity
+if 'count' not in st.session_state:
+    st.session_state.count = 0
+
+if st.button('Click me!'):
+    st.session_state.count += 1
+
+st.write('Count:', st.session_state.count)
+
+# Add health check response
+if st.session_state.health_check:
+    st.success("✅ Application is running properly")
 
 # Initialize environment variables
 try:
