@@ -411,7 +411,7 @@ elif page == "📁 Data Upload":
             except Exception as e:
                 st.error(f"Error loading file: {str(e)}")
     
-   with tab2:
+    with tab2:
         st.subheader("Generate Sample Data")
         
         # Initialize session state
@@ -1302,3 +1302,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
