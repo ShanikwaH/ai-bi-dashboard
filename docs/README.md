@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-yellow)](https://ai.google.dev/)
 
-[Live Demo](https://ai-bi-dashboard-qzvssu3a95ypcwpowqm4nd.streamlit.app) | [Documentation](#-documentation) | [Features](#-features) | [Installation](#installation)
+[Live Demo](https://ai-bi-dashboard-yajxi5tkqxsrpguy7yh8zu.streamlit.app) | [Documentation](#-documentation) | [Features](#-features) | [Installation](#installation)
 
 ---
 
