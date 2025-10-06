@@ -149,7 +149,7 @@ def main():
 """, unsafe_allow_html=True)
 
 # Initialize session state with proper resource management
-    def initialize_session_state():
+    # initialize_session_state():
     """Initialize session state variables with proper defaults"""
     if 'initialized' not in st.session_state:
         try:
@@ -1638,5 +1638,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
