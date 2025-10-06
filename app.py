@@ -1,18 +1,35 @@
-"""
-Minimal Streamlit application
-"""
+# 1. Standard Library Imports
+import os
+import sys
+import json
+import time
+import random
+import traceback
+import io
+from functools import wraps
+from datetime import datetime, timedelta
+
+# 2. Third-Party Library Imports (Must be in requirements.txt)
 import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from dotenv import load_dotenv # Used for os.getenv() calls
+import google.generativeai as genai
+import psutil # For system health check
 
 def main():
     """Main function"""
     st.title("Hello Streamlit!")
     st.write("This is a test.")
-    
+
     if st.button("Test Button"):
         st.success("✅ Everything is working!")
 
 if __name__ == "__main__":
     main()
+# ... rest of the file ...
 
 # Initialize environment variables
 try:
@@ -33,60 +50,15 @@ except Exception as e:
 
 # Check and import required packages
 def import_dependencies():
-    required_packages = {
-        'pandas': 'pd',
-        'numpy': 'np',
-        'plotly.express': 'px',
-        'plotly.graph_objects': 'go',
-        'google.generativeai': 'genai'
-    }
-    
-    imported = {}
-    missing = []
-    
-    for package, alias in required_packages.items():
-        try:
-            imported[alias] = __import__(package.split('.')[0], fromlist=[package])
-            if '.' in package:
-                for submodule in package.split('.')[1:]:
-                    imported[alias] = getattr(imported[alias], submodule)
-        except ImportError:
-            missing.append(package)
-            
-    if missing:
-        show_error(
-            "Missing Dependencies",
-            f"The following packages are required but not installed: {', '.join(missing)}\n"
-            "Please make sure all dependencies are installed correctly."
-        )
-        st.stop()
-        
+    # ... function definition ...
     return imported
 
 # Import dependencies
 with st.spinner("Loading dependencies..."):
     deps = import_dependencies()
-    
+
 # Make dependencies available in global scope
 globals().update(deps)
-
-# Show loading message
-with st.spinner('Loading application components...'):
-    # Import other dependencies
-    try:
-        import pandas as pd
-        import numpy as np
-        import plotly.express as px
-        import plotly.graph_objects as go
-        from datetime import datetime, timedelta
-        import io
-        import google.generativeai as genai
-        import json
-        import traceback
-    except Exception as e:
-        st.error(f"❌ Failed to import required packages: {str(e)}")
-        st.info("Please make sure all dependencies are installed correctly.")
-        st.stop()
 
 # Configure error handling
 def handle_error(e: Exception):
@@ -1666,3 +1638,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
