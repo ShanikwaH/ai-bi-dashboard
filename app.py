@@ -1,195 +1,12 @@
-# =======================================================
-# 1. Standard Library Imports (Must be at the top)
-# =======================================================
-import os
-import sys
-import json
-import time
-import random
-import traceback
-import io
-from functools import wraps
-from datetime import datetime, timedelta
-
-# =======================================================
-# 2. Third-Party Library Imports (Must be at the top)
-# =======================================================
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from dotenv import load_dotenv
+from datetime import datetime, timedelta
+import io
 import google.generativeai as genai
-import psutil
-
-# =======================================================
-# 3. Helper Function for show_error (Needed early)
-# =======================================================
-# Define this small helper function early, as it's used in the load_dotenv block
-def show_error(title, message):
-    """Basic error display, handles when st.error might not be ready"""
-    print(f"ERROR: {title} - {message}", file=sys.stderr)
-    try:
-        st.error(f"❌ {title}: {message}")
-    except:
-        pass # Streamlit not fully initialized yet
-
-# =======================================================
-# 4. Environment & Streamlit Config (Executable Code)
-# =======================================================
-
-# Initialize environment variables
-try:
-    load_dotenv()
-except Exception as e:
-    show_error("Environment Error", f"Failed to load environment variables: {str(e)}")
-
-# Basic streamlit config (must be called first, before st.write/st.button etc.)
-try:
-    st.set_page_config(
-        page_title="AI-Powered BI Dashboard",
-        page_icon="📊",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-except Exception as e:
-    # Crucial: Must be present to close the try block.
-    # Note: Streamlit usually handles repeated set_page_config calls, 
-    # but the first one needs to be early.
-    st.write("Error setting page config. Continuing with defaults.")
-
-# =======================================================
-# 5. Core Initialization Functions
-# =======================================================
-
-# Re-define initialize_session_state here, un-indented!
-def initialize_session_state():
-    """Initialize session state variables with proper defaults"""
-    if 'initialized' not in st.session_state:
-        try:
-            # ... (rest of your initialize_session_state function) ...
-            st.session_state.df = None
-            st.session_state.data_timestamp = None
-            
-            api_key = os.getenv('GEMINI_API_KEY')
-            # ... (rest of API setup) ...
-            st.session_state.gemini_api_key = api_key
-            st.session_state.model_name = 'gemini-1.5-flash'
-            st.session_state.gemini_model = None
-            
-            # ... (rest of history, state, etc.) ...
-            st.session_state.chat_history = []
-            st.session_state.max_history = 50
-            st.session_state.is_ready = False
-            st.session_state.health_check_passed = False
-            st.session_state.initialized = True
-            
-        except Exception as e:
-            # Must use the defined show_error or st.error
-            st.error(
-                f"❌ Failed to initialize application state: {str(e)}\n"
-                "Please refresh the page to try again."
-            )
-            st.stop()
-            
-# Initialize session state immediately after definition
-initialize_session_state() 
-
-# =======================================================
-# 6. Remaining Functions (handle_error, check_system_health, etc.)
-# =======================================================
-# Place all other helper functions (handle_error, check_system_health, retry_with_backoff, etc.)
-# here, ensuring they are all UNINDENTED at the top level.
-# NOTE: Make sure to remove the DUPLICATE DEFINITION of 'main()' around line 90
-# and the other duplicate set_page_config near it.
-
-def handle_error(e: Exception):
-    # ... (content of your handle_error function) ...
-    pass # Placeholder
-
-# ... (other functions like cleanup_resources, check_system_health, etc.) ...
-
-# =======================================================
-# 7. Main Application Logic
-# =======================================================
-def main():
-    """Main application entry point. This is the single, final main definition."""
-    # The content of your *second* main() function goes here, starting with:
-    # if not st.session_state.health_check_passed:
-    # ...
-    
-    # Streamlit Page Logic (if page == "🏠 Home":, elif page == "📁 Data Upload":, etc.)
-    # This logic should be moved into a function and called from main(), 
-    # or placed *after* the if __name__ == "__main__": block, but NOT inside a function 
-    # that is never called (which can happen with the module-level 'if page == ...' blocks).
-    
-    # For a clean app, the page logic should NOT be placed at the top level outside of functions,
-    # as Streamlit re-runs the entire file.
-
-# =======================================================
-# 8. Main Execution Block (Must be at the bottom)
-# =======================================================
-if __name__ == "__main__":
-    main()
-
-# Initialize environment variables
-try:
-    load_dotenv()
-except Exception as e:
-    show_error("Environment Error", f"Failed to load environment variables: {str(e)}")
-
-# Basic streamlit config
-try:
-    st.set_page_config(
-        page_title="AI-Powered BI Dashboard",
-        page_icon="📊",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-except Exception as e:
-    # Crucial: Must be present to close the try block.
-    st.write("Error setting page config. Continuing with defaults.")
-
-# Check and import required packages
-def import_dependencies():
-    # ... function definition ...
-    return imported
-
-# Import dependencies
-with st.spinner("Loading dependencies..."):
-    deps = import_dependencies()
-
-# Make dependencies available in global scope
-globals().update(deps)
-
-# Configure error handling
-def handle_error(e: Exception):
-    """Handle exceptions and display user-friendly error messages"""
-    error_msg = str(e)
-    if "connection" in error_msg.lower():
-        st.error("❌ Connection error. Please check your internet connection.")
-    elif "permission" in error_msg.lower():
-        st.error("❌ Permission denied. Please check your API key and permissions.")
-    elif "not found" in error_msg.lower():
-        st.error("❌ Resource not found. Please check your file paths and configurations.")
-    else:
-        st.error(f"❌ An error occurred: {error_msg}")
-    
-    if os.getenv('STREAMLIT_DEBUG', '').lower() == 'true':
-        st.code(traceback.format_exc())
-
-# Startup health check
-try:
-    # Verify critical packages
-    import streamlit
-    import pandas
-    import plotly
-    import google.generativeai
-except ImportError as e:
-    st.error(f"❌ Required package not found: {str(e)}")
-    st.info("Please check requirements.txt and reinstall dependencies.")
-    sys.exit(1)
+import json
 
 # Page configuration
 st.set_page_config(
@@ -199,29 +16,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Main application function
-def main():
-    """Main application entry point"""
-    try:
-        # Initialize session state
-        initialize_session_state()
-        
-        # Perform health check
-        if not st.session_state.health_check_passed:
-            with st.spinner("Performing system health check..."):
-                if not check_system_health():
-                    st.stop()
-        
-        # Custom CSS
-        st.markdown("""
-            <style>
-            .main-header {
-                font-size: 2.5rem;
-                font-weight: bold;
-                color: #1f77b4;
-                text-align: center;
-                margin-bottom: 2rem;
-            }
+# Custom CSS
+st.markdown("""
+    <style>
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #1f77b4;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
     .ai-response {
         background-color: #f0f8ff;
         padding: 1.5rem;
@@ -251,189 +55,41 @@ def main():
     </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state with proper resource management
-def initialize_session_state():
-    """Initialize session state variables with proper defaults"""
-    if 'initialized' not in st.session_state:
-        try:
-            # Data management
-            st.session_state.df = None
-            st.session_state.data_timestamp = None
-            
-            # API configuration
-            api_key = os.getenv('GEMINI_API_KEY')
-            if not api_key:
-                st.warning("🔑 No Gemini API key found. Please add it to your environment variables or secrets.")
-            st.session_state.gemini_api_key = api_key
-            st.session_state.model_name = 'gemini-1.5-flash'
-            st.session_state.gemini_model = None
-            
-            # Chat and history management
-            st.session_state.chat_history = []
-            st.session_state.max_history = 50
-            
-            # System state
-            st.session_state.is_ready = False
-            st.session_state.startup_complete = False
-            st.session_state.health_check_passed = False
-            
-            # Mark as initialized
-            st.session_state.initialized = True
-            
-        except Exception as e:
-            show_error(
-                "Initialization Error",
-                f"Failed to initialize application state: {str(e)}\n"
-                "Please refresh the page to try again."
-            )
-            st.stop()
-
 # Initialize session state
-initialize_session_state()
-
-# Resource cleanup function
-def cleanup_resources():
-    """Clean up resources when needed"""
-    if st.session_state.df is not None and st.session_state.df.size > 1000000:  # 1M cells
-        st.session_state.df = None  # Clear large dataframes
-        
-    if len(st.session_state.chat_history) > st.session_state.max_history:
-        # Keep only recent history
-        st.session_state.chat_history = st.session_state.chat_history[-st.session_state.max_history:]
-
-# Clean up resources periodically
-if st.session_state.request_count % 10 == 0:  # Every 10 requests
-    cleanup_resources()
+if 'df' not in st.session_state:
+    st.session_state.df = None
+if 'gemini_api_key' not in st.session_state:
+    st.session_state.gemini_api_key = None
+if 'gemini_model' not in st.session_state:
+    st.session_state.gemini_model = None
+if 'model_name' not in st.session_state:
+    st.session_state.model_name = None
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
 
 # Configure Gemini AI
-from functools import wraps
-import time
-import random
-
-def retry_with_backoff(retries=3, backoff_in_seconds=1):
-    """Retry decorator with exponential backoff"""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            x = 0
-            while True:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    if x == retries:
-                        raise e
-                    sleep_time = (backoff_in_seconds * 2 ** x + 
-                                random.uniform(0, 1))
-                    time.sleep(sleep_time)
-                    x += 1
-        return wrapper
-    return decorator
-
-def check_system_health():
-    """Perform system health check"""
-    try:
-        # Check memory usage
-        import psutil
-        memory = psutil.Process().memory_info().rss / 1024 / 1024  # MB
-        if memory > 1000:  # 1GB
-            st.warning("⚠️ High memory usage detected. Performance may be affected.")
-        
-        # Verify environment
-        if not os.getenv('GEMINI_API_KEY'):
-            st.warning("⚠️ Gemini API key not found in environment.")
-        
-        # Mark health check as passed
-        st.session_state.health_check_passed = True
-        return True
-    except Exception as e:
-        show_error("Health Check Failed", str(e))
-        return False
-
-@retry_with_backoff(retries=3, backoff_in_seconds=1)
 def configure_gemini(api_key, model_name='gemini-1.5-flash'):
-    """Configure Gemini AI with API key and retry logic"""
-    if not api_key:
-        st.error("🔑 Please provide a Gemini API key.")
-        st.info("Set GEMINI_API_KEY in:\n- Local: .env file\n- Streamlit Cloud: Secrets management")
-        return None
-
+    """Configure Gemini AI with API key"""
     try:
-        # Update request tracking
-        st.session_state.request_count += 1
-        st.session_state.last_request_time = time.time()
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(model_name)
         
-        # Clean and validate API key
-        api_key = api_key.strip()
-        if len(api_key) < 20:
-            st.error("🔑 Invalid API key format. Please check your key.")
-            return None
-            
-        # Configure the API with retry logic
-        max_retries = 3
-        retry_count = 0
+        # Test the connection
+        test = model.generate_content("Hello")
         
-        while retry_count < max_retries:
-            try:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel(model_name)
-                
-                # Test connection with timeout
-                test = model.generate_content(
-                    "Test connection",
-                    safety_settings={"HARASSMENT": "block_none", "HATE_SPEECH": "block_none"}
-                )
-                
-                st.success("✅ Successfully connected to Gemini AI")
-                return model
-                
-            except Exception as e:
-                retry_count += 1
-                error_msg = str(e).lower()
-                
-                if retry_count < max_retries:
-                    st.warning(f"⚠️ Attempt {retry_count}/{max_retries} failed. Retrying...")
-                    time.sleep(2 ** retry_count)  # Exponential backoff
-                    continue
-                
-                # Handle specific errors
-                if "quota" in error_msg:
-                    st.error("💰 API quota exceeded. Please check your billing settings.")
-                elif "permission" in error_msg or "unauthorized" in error_msg:
-                    st.error("🚫 API key doesn't have proper permissions.")
-                elif "timeout" in error_msg:
-                    st.error("⏱️ Connection timeout. Please try again later.")
-                else:
-                    st.error(f"❌ Connection error: {str(e)}")
-                
-                st.info("Troubleshooting steps:\n"
-                       "1. Verify API key is correct\n"
-                       "2. Check billing is enabled\n"
-                       "3. Ensure you're using a supported model\n"
-                       "4. Check your internet connection")
-                
-                # Update error tracking
-                st.session_state.error_count += 1
-                st.session_state.last_error = str(e)
-                
-                return None
-                
+        return model
     except Exception as e:
-        handle_error(e)
+        st.error(f"Error: {str(e)}")
+        st.info("Try: 1) Check API key, 2) Enable billing, 3) Use gemini-1.5-flash")
         return None
 
 # Generate AI insights
 def generate_ai_insights(df, question=None):
     """Generate insights using Gemini AI"""
-    if df is None:
-        return "Please upload a dataset first."
-        
     if st.session_state.gemini_model is None:
         return "Please configure Gemini API key first."
     
     try:
-        if df.empty:
-            return "The uploaded dataset is empty. Please check your data."
-            
         # Prepare data summary for AI
         summary = f"""
         Dataset Overview:
@@ -567,101 +223,6 @@ def generate_sample_data():
     
     return df
 
-def generate_sales_data_df(rows):
-    """Generate sales data as DataFrame"""
-    import random
-    
-    products = ['Laptop', 'Mouse', 'Keyboard', 'Monitor', 'Headphones', 'Webcam', 'Desk', 'Chair']
-    categories = ['Electronics', 'Accessories', 'Furniture']
-    regions = ['North', 'South', 'East', 'West', 'Central']
-    
-    data = []
-    for i in range(1, rows + 1):
-        product = random.choice(products)
-        category = random.choice(categories)
-        quantity = random.randint(1, 10)
-        price = round(random.uniform(50, 1000), 2)
-        total = round(quantity * price, 2)
-        date = (datetime(2024, 1, 1) + timedelta(days=random.randint(0, 364))).strftime('%Y-%m-%d')
-        customer_id = f"CUST{random.randint(1, 5000):06d}"
-        region = random.choice(regions)
-        
-        data.append([i, date, product, category, quantity, price, total, customer_id, region])
-    
-    return pd.DataFrame(data, columns=['transaction_id', 'date', 'product', 'category', 'quantity', 'price', 'total', 'customer_id', 'region'])
-
-def generate_healthcare_data_df(rows):
-    """Generate healthcare data as DataFrame"""
-    import random
-    
-    diagnoses = ['Hypertension', 'Diabetes', 'Asthma', 'Arthritis', 'Pneumonia', 'Bronchitis', 'Fracture', 'Migraine']
-    genders = ['M', 'F', 'Other']
-    insurances = ['Medicare', 'Medicaid', 'Private', 'Uninsured']
-    
-    data = []
-    for i in range(1, rows + 1):
-        patient_id = f"PAT{i:08d}"
-        admission_date = datetime(2024, 1, 1) + timedelta(days=random.randint(0, 364))
-        treatment_days = random.randint(1, 14)
-        discharge_date = admission_date + timedelta(days=treatment_days)
-        diagnosis = random.choice(diagnoses)
-        age = random.randint(18, 98)
-        gender = random.choice(genders)
-        cost = round(random.uniform(1000, 50000), 2)
-        insurance = random.choice(insurances)
-        
-        data.append([
-            patient_id,
-            admission_date.strftime('%Y-%m-%d'),
-            discharge_date.strftime('%Y-%m-%d'),
-            diagnosis,
-            age,
-            gender,
-            treatment_days,
-            cost,
-            insurance
-        ])
-    
-    return pd.DataFrame(data, columns=['patient_id', 'admission_date', 'discharge_date', 'diagnosis', 'age', 'gender', 'treatment_days', 'cost', 'insurance'])
-
-def generate_finance_data_df(rows):
-    """Generate finance data as DataFrame"""
-    import random
-    
-    types = ['Debit', 'Credit', 'Transfer', 'ATM', 'Payment']
-    currencies = ['USD', 'EUR', 'GBP', 'JPY']
-    merchants = ['Amazon', 'Walmart', 'Target', 'Starbucks', 'Shell', 'Restaurant', 'Online Store', 'Grocery']
-    
-    balance = 10000.0
-    data = []
-    
-    for i in range(1, rows + 1):
-        txn_id = f"TXN{i:010d}"
-        timestamp = (datetime(2024, 1, 1) + timedelta(
-            days=random.randint(0, 364),
-            hours=random.randint(0, 23),
-            minutes=random.randint(0, 59),
-            seconds=random.randint(0, 59)
-        )).isoformat()
-        account_id = f"ACC{random.randint(1, 10000):08d}"
-        txn_type = random.choice(types)
-        amount = round(random.uniform(10, 2000), 2)
-        
-        if txn_type in ['Debit', 'ATM', 'Payment']:
-            balance -= amount
-        else:
-            balance += amount
-        
-        currency = random.choice(currencies)
-        merchant = random.choice(merchants)
-        
-        data.append([txn_id, timestamp, account_id, txn_type, amount, round(balance, 2), currency, merchant])
-        
-        if i % 10000 == 0:
-            balance = 10000 + random.uniform(0, 5000)
-    
-    return pd.DataFrame(data, columns=['transaction_id', 'timestamp', 'account_id', 'transaction_type', 'amount', 'balance', 'currency', 'merchant'])
-
 def calculate_kpis(df, date_col, value_col):
     """Calculate key performance indicators"""
     df_sorted = df.sort_values(date_col)
@@ -705,7 +266,7 @@ def exponential_smoothing_forecast(series, alpha=0.3, periods=30):
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### 🤖 AI BI Dashboard")
+    st.image("https://via.placeholder.com/150x50/4285f4/ffffff?text=AI+BI+Dashboard", use_container_width=True)
     st.title("🤖 AI-Powered BI")
     
     # Gemini API Configuration
@@ -714,7 +275,7 @@ with st.sidebar:
             "Enter Gemini API Key",
             type="password",
             value=st.session_state.gemini_api_key if st.session_state.gemini_api_key else "",
-            help="Get your API key from https://aistudio.google.com/welcome"
+            help="Get your API key from https://makersuite.google.com/app/apikey"
         )
         
         model_choice = st.selectbox(
@@ -828,7 +389,7 @@ elif page == "📁 Data Upload":
                 st.success(f"✅ File uploaded successfully! Loaded {len(df)} rows and {len(df.columns)} columns.")
                 
                 st.subheader("Data Preview")
-                st.dataframe(df.head(10), width='stretch')
+                st.dataframe(df.head(10), use_container_width=True)
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -850,7 +411,7 @@ elif page == "📁 Data Upload":
             except Exception as e:
                 st.error(f"Error loading file: {str(e)}")
     
-    with tab2:
+   with tab2:
         st.subheader("Generate Sample Data")
         
         # Initialize session state
@@ -965,7 +526,7 @@ elif page == "🤖 AI Insights":
             )
         
         with col2:
-            if st.button("🤖 Generate AI Insights", type="primary", width='stretch'):
+            if st.button("🤖 Generate AI Insights", type="primary", use_container_width=True):
                 with st.spinner("AI is analyzing your data... This may take a moment."):
                     
                     if analysis_type == "Comprehensive Overview":
@@ -1031,7 +592,7 @@ elif page == "💬 AI Chat Assistant":
             )
         
         with col2:
-            send_button = st.button("Send", type="primary", width='stretch')
+            send_button = st.button("Send", type="primary", use_container_width=True)
         
         if send_button and user_question:
             # Add user message to history
@@ -1084,11 +645,11 @@ elif page == "🔍 Exploratory Analysis":
                 'Unique Values': [df[col].nunique() for col in df.columns]
             })
             
-            st.dataframe(col_info, width='stretch')
+            st.dataframe(col_info, use_container_width=True)
             
             st.markdown("---")
             st.subheader("Data Sample")
-            st.dataframe(df.head(20), width='stretch')
+            st.dataframe(df.head(20), use_container_width=True)
         
         with tab2:
             st.subheader("Statistical Summary")
@@ -1096,7 +657,7 @@ elif page == "🔍 Exploratory Analysis":
             numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
             
             if numeric_cols:
-                st.dataframe(df[numeric_cols].describe(), width='stretch')
+                st.dataframe(df[numeric_cols].describe(), use_container_width=True)
                 
                 st.markdown("---")
                 st.subheader("Distribution Analysis")
@@ -1136,7 +697,7 @@ elif page == "🔍 Exploratory Analysis":
             
             if len(quality_df) > 0:
                 st.warning(f"Found {len(quality_df)} columns with missing values")
-                st.dataframe(quality_df, width='stretch')
+                st.dataframe(quality_df, use_container_width=True)
                 
                 fig = px.bar(quality_df, x='Column', y='Missing %',
                            title="Missing Values by Column (%)",
@@ -1257,7 +818,7 @@ elif page == "📈 Visualizations":
                         })
                 
                 corr_df = pd.DataFrame(corr_pairs).sort_values('Correlation', key=abs, ascending=False).head(10)
-                st.dataframe(corr_df, width='stretch')
+                st.dataframe(corr_df, use_container_width=True)
             else:
                 st.info("Need at least 2 numeric columns for correlation analysis.")
         
@@ -1277,7 +838,7 @@ elif page == "📈 Visualizations":
                                color_continuous_scale='Viridis')
                     st.plotly_chart(fig, use_container_width=True)
                     
-                    st.dataframe(grouped, width='stretch')
+                    st.dataframe(grouped, use_container_width=True)
                 else:
                     st.info("No numeric columns available for geographic analysis.")
             else:
@@ -1407,7 +968,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        if st.button("Interpret Moving Average Forecast", width='stretch', key="interpret_ma"):
+                        if st.button("Interpret Moving Average Forecast", use_container_width=True, key="interpret_ma"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['ma_forecast'], "Moving Average")
@@ -1422,7 +983,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                             st.markdown("</div>", unsafe_allow_html=True)
                     
                     with col2:
-                        if st.button("Interpret Exponential Smoothing Forecast", width='stretch', key="interpret_es"):
+                        if st.button("Interpret Exponential Smoothing Forecast", use_container_width=True, key="interpret_es"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['es_forecast'], "Exponential Smoothing")
@@ -1438,7 +999,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                 
                 # Display forecast table
                 st.subheader("Forecast Data")
-                st.dataframe(fdata['forecast_df'], width='stretch')
+                st.dataframe(fdata['forecast_df'], use_container_width=True)
                 
                 # Clear forecast button
                 st.markdown("---")
@@ -1479,7 +1040,7 @@ elif page == "📊 Statistical Analysis":
                     stats_df['skewness'] = df[selected_cols].skew()
                     stats_df['kurtosis'] = df[selected_cols].kurtosis()
                     
-                    st.dataframe(stats_df, width='stretch')
+                    st.dataframe(stats_df, use_container_width=True)
                     
                     for col in selected_cols:
                         fig = px.histogram(df, x=col, marginal="box",
@@ -1578,7 +1139,7 @@ elif page == "📊 Statistical Analysis":
                 
                 if len(outliers) > 0:
                     st.subheader("Outlier Data")
-                    st.dataframe(outliers, width='stretch')
+                    st.dataframe(outliers, use_container_width=True)
             else:
                 st.info("No numeric columns found for outlier detection.")
 
@@ -1607,7 +1168,7 @@ elif page == "📄 AI Report Generator":
             include_charts = st.checkbox("Include Key Metrics", value=True)
         
         with col3:
-            if st.button("🤖 Generate AI Report", type="primary", width='stretch'):
+            if st.button("🤖 Generate AI Report", type="primary", use_container_width=True):
                 with st.spinner("AI is generating your comprehensive report... This may take a minute."):
                     report = generate_automated_report(df)
                     st.session_state.generated_report = report
@@ -1647,7 +1208,7 @@ elif page == "📄 AI Report Generator":
                     data=st.session_state.generated_report,
                     file_name=f"ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    width='stretch'
+                    use_container_width=True
                 )
             
             with col2:
@@ -1673,7 +1234,7 @@ Generated by AI-Powered BI Dashboard
                     data=full_report,
                     file_name=f"full_ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    width='stretch'
+                    use_container_width=True
                 )
 
 elif page == "📥 Export":
@@ -1729,21 +1290,15 @@ elif page == "📥 Export":
         
         st.markdown("---")
         st.subheader("Data Preview")
-        st.dataframe(df.head(10), width='stretch')
+        st.dataframe(df.head(10), use_container_width=True)
 
 # Footer
 st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center; color: #666;'>
-        <p>🤖 AI-Powered Business Intelligence Dashboard | Built with Streamlit & Google Gemini | © 2025</p>
+        <p>🤖 AI-Powered Business Intelligence Dashboard | Built with Streamlit & Google Gemini | © 2024</p>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-
-
-
-
-
