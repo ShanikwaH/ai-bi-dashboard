@@ -103,6 +103,18 @@ if 'show_report' not in st.session_state:
     st.session_state.show_report = False
 if 'show_metrics' not in st.session_state:
     st.session_state.show_metrics = False
+if 'show_executive_report' not in st.session_state:
+    st.session_state.show_executive_report = False
+if 'show_executive_download' not in st.session_state:
+    st.session_state.show_executive_download = False
+if 'show_full_download' not in st.session_state:
+    st.session_state.show_full_download = False
+if 'show_regular_report' not in st.session_state:
+    st.session_state.show_regular_report = False
+if 'show_full_report' not in st.session_state:
+    st.session_state.show_full_report = False
+if 'current_report_type' not in st.session_state:
+    st.session_state.current_report_type = None
     # Try to get API key from environment variables
     st.session_state.gemini_api_key = os.getenv('GEMINI_API_KEY')
 if 'gemini_model' not in st.session_state:
@@ -2066,10 +2078,27 @@ elif page == "📄 AI Report Generator":
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            report_type = st.selectbox(
+            # Clear displays when report type changes
+            current_report_type = st.selectbox(
                 "Report Type",
-                ["Executive Summary", "Detailed Analysis", "Performance Review", "Strategic Insights"]
+                ["Executive Summary", "Detailed Analysis", "Performance Review", "Strategic Insights"],
+                key="report_type_selector"
             )
+            
+            # Clear displays if report type changes
+            if 'previous_report_type' not in st.session_state:
+                st.session_state.previous_report_type = current_report_type
+            
+            if current_report_type != st.session_state.previous_report_type:
+                st.session_state.show_executive_report = False
+                st.session_state.show_executive_download = False
+                st.session_state.show_full_download = False
+                st.session_state.show_regular_report = False
+                st.session_state.show_full_report = False
+                st.session_state.show_metrics = False
+                st.session_state.previous_report_type = current_report_type
+            
+            report_type = current_report_type
         
         with col2:
             include_charts = st.checkbox("Include Key Metrics", value=True)
@@ -2171,49 +2200,55 @@ Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
 
 {st.session_state.generated_report}
 """
-                if st.download_button(
+                download_clicked = st.download_button(
                     label=f"📥 Download {report_type} Report",
                     data=current_report,
                     file_name=f"ai_report_{report_type.lower().replace(' ', '_')}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_UTC.txt",
                     mime="text/plain",
                     key="download_current_report"
-                ):
+                )
+                
+                if download_clicked:
                     # Clear all displays after download
-                    st.session_state.show_regular_report = False
-                    st.session_state.show_executive_report = False
-                    st.session_state.show_executive_download = False
-                    st.session_state.show_full_report = False
-                    st.session_state.show_full_download = False
+                    for state_key in ['show_regular_report', 'show_executive_report', 
+                                    'show_executive_download', 'show_full_report',
+                                    'show_full_download', 'show_metrics']:
+                        st.session_state[state_key] = False
+                    st.success("✅ Report downloaded successfully!")
             
             with col2:
                 # Generate and download comprehensive report
                 if st.button("Generate Full Report", key="generate_full"):
-                    success = True
                     try:
-                        # Clear all other displays
-                        st.session_state.show_regular_report = False
-                        st.session_state.show_executive_report = False
-                        st.session_state.show_executive_download = False
-                        st.session_state.show_full_report = False
+                        # Clear all other displays first
+                        for state_key in ['show_regular_report', 'show_executive_report', 
+                                        'show_executive_download', 'show_full_report',
+                                        'show_full_download']:
+                            st.session_state[state_key] = False
                         
                         with st.spinner("Generating comprehensive report..."):
-                            full_report_text = generate_automated_report(df, "comprehensive")
-                            st.session_state.full_report = full_report_text
-                            st.session_state.current_report_type = "comprehensive"
-                            st.session_state.show_full_download = True
-                            utc_time = datetime.now(timezone.utc)
-                            
-                            # Display full report download section
-                            st.markdown("---")
-                            st.markdown("### 📄 Comprehensive Report Ready")
-                            st.markdown("Your full report has been generated and is ready for download.")
+                            try:
+                                full_report_text = generate_automated_report(df, "comprehensive")
+                                st.session_state.full_report = full_report_text
+                                st.session_state.current_report_type = "comprehensive"
+                                st.session_state.show_full_download = True
+                                utc_time = datetime.now(timezone.utc)
+                                
+                                # Display full report download section
+                                st.markdown("---")
+                                st.markdown("### 📄 Comprehensive Report Ready")
+                                st.markdown("Your full report has been generated and is ready for download.")
+                            except Exception as e:
+                                handle_error(e)
+                                # Clear all states on error
+                                for state_key in ['show_regular_report', 'show_executive_report', 
+                                                'show_executive_download', 'show_full_report',
+                                                'show_full_download']:
+                                    st.session_state[state_key] = False
+                                st.stop()
                     except Exception as e:
                         handle_error(e)
-                        st.session_state.show_full_download = False
-                        success = False
-                    
-                    if not success:
-                        st.stop()
+                        st.warning("⚠️ Failed to generate report. Please try again.")
                         full_report = f"""
 COMPREHENSIVE AI BUSINESS INTELLIGENCE REPORT
 Generated: {utc_time.strftime('%Y-%m-%d %H:%M:%S UTC')}
