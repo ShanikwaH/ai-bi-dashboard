@@ -918,6 +918,18 @@ def exponential_smoothing_forecast(series, alpha=0.3, periods=30):
     forecast = [last_value] * periods
     return forecast
 
+def clear_unused_sample_data(keep_key=None):
+    """Clear unused sample datasets from session state to free memory"""
+    sample_keys = [
+        'sales_df_sample', 'healthcare_df_sample', 'finance_df_sample',
+        'industry_agnostic_df_sample', 'manufacturing_df_sample',
+        'operations_df_sample', 'government_df_sample'
+    ]
+    
+    for key in sample_keys:
+        if key != keep_key and key in st.session_state:
+            st.session_state[key] = None
+
 # Sidebar
 with st.sidebar:
     st.markdown("### 🤖 AI BI Dashboard")
@@ -1090,17 +1102,19 @@ elif page == "📁 Data Upload":
         with col1:
             st.write("Sales transactions with products, prices, and regional data")
         with col2:
-            sales_rows = st.number_input("Rows", min_value=100, max_value=50000, value=10000, step=1000, key="sales_sample_rows")
+            sales_rows = st.number_input("Rows", min_value=100, max_value=25000, value=5000, step=1000, key="sales_sample_rows")
         
         if st.button("Generate Sales Data", type="primary", key="gen_sales_sample"):
             with st.spinner("Generating sales data..."):
+                clear_unused_sample_data('sales_df_sample')  # Free memory
                 st.session_state.sales_df_sample = generate_sales_data_df(sales_rows)
                 st.session_state.df = st.session_state.sales_df_sample  # Set as active dataset
             st.success(f"✅ Generated {len(st.session_state.sales_df_sample):,} sales records!")
+            st.rerun()
         
         if st.session_state.sales_df_sample is not None:
-            st.dataframe(st.session_state.sales_df_sample.head(10), use_container_width=True)
-            csv = st.session_state.sales_df_sample.to_csv(index=False)
+            st.dataframe(st.session_state.sales_df_sample.head(10), width='stretch')
+            csv = st.session_state.sales_df_sample.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Sales CSV",
                 data=csv,
@@ -1117,17 +1131,19 @@ elif page == "📁 Data Upload":
         with col1:
             st.write("Patient records with diagnoses, treatments, and insurance")
         with col2:
-            healthcare_rows = st.number_input("Rows", min_value=100, max_value=100000, value=10000, step=5000, key="healthcare_sample_rows")
+            healthcare_rows = st.number_input("Rows", min_value=100, max_value=25000, value=5000, step=1000, key="healthcare_sample_rows")
         
         if st.button("Generate Healthcare Data", type="primary", key="gen_healthcare_sample"):
             with st.spinner("Generating healthcare data..."):
+                clear_unused_sample_data('healthcare_df_sample')  # Free memory
                 st.session_state.healthcare_df_sample = generate_healthcare_data_df(healthcare_rows)
                 st.session_state.df = st.session_state.healthcare_df_sample  # Set as active dataset
             st.success(f"✅ Generated {len(st.session_state.healthcare_df_sample):,} patient records!")
+            st.rerun()
         
         if st.session_state.healthcare_df_sample is not None:
-            st.dataframe(st.session_state.healthcare_df_sample.head(10), use_container_width=True)
-            csv = st.session_state.healthcare_df_sample.to_csv(index=False)
+            st.dataframe(st.session_state.healthcare_df_sample.head(10), width='stretch')
+            csv = st.session_state.healthcare_df_sample.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Healthcare CSV",
                 data=csv,
@@ -1144,17 +1160,19 @@ elif page == "📁 Data Upload":
         with col1:
             st.write("Financial transactions with accounts, merchants, and balances")
         with col2:
-            finance_rows = st.number_input("Rows", min_value=100, max_value=100000, value=10000, step=5000, key="finance_sample_rows")
+            finance_rows = st.number_input("Rows", min_value=100, max_value=25000, value=5000, step=1000, key="finance_sample_rows")
         
         if st.button("Generate Finance Data", type="primary", key="gen_finance_sample"):
             with st.spinner("Generating finance data..."):
+                clear_unused_sample_data('finance_df_sample')  # Free memory
                 st.session_state.finance_df_sample = generate_finance_data_df(finance_rows)
                 st.session_state.df = st.session_state.finance_df_sample  # Set as active dataset
             st.success(f"✅ Generated {len(st.session_state.finance_df_sample):,} transactions!")
+            st.rerun()
         
         if st.session_state.finance_df_sample is not None:
-            st.dataframe(st.session_state.finance_df_sample.head(10), use_container_width=True)
-            csv = st.session_state.finance_df_sample.to_csv(index=False)
+            st.dataframe(st.session_state.finance_df_sample.head(10), width='stretch')
+            csv = st.session_state.finance_df_sample.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Finance CSV",
                 data=csv,
@@ -1171,16 +1189,21 @@ elif page == "📁 Data Upload":
         with col1:
             st.write("Complex business records: projects, budgets, teams, ratings - messy & realistic")
         with col2:
-            agnostic_rows = st.number_input("Rows", min_value=100, max_value=1000000, value=50000, step=10000, key="agnostic_sample_rows")
+            agnostic_rows = st.number_input("Rows", min_value=100, max_value=50000, value=10000, step=5000, key="agnostic_sample_rows")
+        
+        if agnostic_rows > 25000:
+            st.warning("⚠️ Large datasets may cause memory issues on Streamlit Cloud. Consider using ≤25,000 rows.")
         
         if st.button("Generate Industry-Agnostic Data", type="primary", key="gen_agnostic_sample"):
             with st.spinner(f"Generating {agnostic_rows:,} records... This may take a moment for large datasets..."):
+                clear_unused_sample_data('industry_agnostic_df_sample')  # Free memory
                 st.session_state.industry_agnostic_df_sample = generate_industry_agnostic_data_df(agnostic_rows)
                 st.session_state.df = st.session_state.industry_agnostic_df_sample  # Set as active dataset
             st.success(f"✅ Generated {len(st.session_state.industry_agnostic_df_sample):,} business records!")
+            st.rerun()
         
         if st.session_state.industry_agnostic_df_sample is not None:
-            st.dataframe(st.session_state.industry_agnostic_df_sample.head(10), use_container_width=True)
+            st.dataframe(st.session_state.industry_agnostic_df_sample.head(10), width='stretch')
             
             # Show data quality summary
             col1, col2, col3 = st.columns(3)
@@ -1191,7 +1214,7 @@ elif page == "📁 Data Upload":
             with col3:
                 st.metric("Data Quality", f"{((1 - st.session_state.industry_agnostic_df_sample.isnull().sum().sum() / (len(st.session_state.industry_agnostic_df_sample) * len(st.session_state.industry_agnostic_df_sample.columns))) * 100):.1f}%")
             
-            csv = st.session_state.industry_agnostic_df_sample.to_csv(index=False)
+            csv = st.session_state.industry_agnostic_df_sample.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Industry-Agnostic CSV",
                 data=csv,
@@ -1208,16 +1231,21 @@ elif page == "📁 Data Upload":
         with col1:
             st.write("Production batches, quality metrics, machine data, yield rates - complex & messy")
         with col2:
-            manufacturing_rows = st.number_input("Rows", min_value=100, max_value=1000000, value=50000, step=10000, key="manufacturing_sample_rows")
+            manufacturing_rows = st.number_input("Rows", min_value=100, max_value=50000, value=10000, step=5000, key="manufacturing_sample_rows")
+        
+        if manufacturing_rows > 25000:
+            st.warning("⚠️ Large datasets may cause memory issues on Streamlit Cloud. Consider using ≤25,000 rows.")
         
         if st.button("Generate Manufacturing Data", type="primary", key="gen_manufacturing_sample"):
             with st.spinner(f"Generating {manufacturing_rows:,} records... This may take a moment for large datasets..."):
+                clear_unused_sample_data('manufacturing_df_sample')  # Free memory
                 st.session_state.manufacturing_df_sample = generate_manufacturing_data_df(manufacturing_rows)
                 st.session_state.df = st.session_state.manufacturing_df_sample  # Set as active dataset
             st.success(f"✅ Generated {len(st.session_state.manufacturing_df_sample):,} production records!")
+            st.rerun()
         
         if st.session_state.manufacturing_df_sample is not None:
-            st.dataframe(st.session_state.manufacturing_df_sample.head(10), use_container_width=True)
+            st.dataframe(st.session_state.manufacturing_df_sample.head(10), width='stretch')
             
             # Show data quality summary
             col1, col2, col3 = st.columns(3)
@@ -1228,7 +1256,7 @@ elif page == "📁 Data Upload":
             with col3:
                 st.metric("Data Quality", f"{((1 - st.session_state.manufacturing_df_sample.isnull().sum().sum() / (len(st.session_state.manufacturing_df_sample) * len(st.session_state.manufacturing_df_sample.columns))) * 100):.1f}%")
             
-            csv = st.session_state.manufacturing_df_sample.to_csv(index=False)
+            csv = st.session_state.manufacturing_df_sample.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Manufacturing CSV",
                 data=csv,
@@ -1245,16 +1273,21 @@ elif page == "📁 Data Upload":
         with col1:
             st.write("Shipments, tracking, warehouses, delivery metrics - complex & messy")
         with col2:
-            operations_rows = st.number_input("Rows", min_value=100, max_value=1000000, value=50000, step=10000, key="operations_sample_rows")
+            operations_rows = st.number_input("Rows", min_value=100, max_value=50000, value=10000, step=5000, key="operations_sample_rows")
+        
+        if operations_rows > 25000:
+            st.warning("⚠️ Large datasets may cause memory issues on Streamlit Cloud. Consider using ≤25,000 rows.")
         
         if st.button("Generate Operations Data", type="primary", key="gen_operations_sample"):
             with st.spinner(f"Generating {operations_rows:,} records... This may take a moment for large datasets..."):
+                clear_unused_sample_data('operations_df_sample')  # Free memory
                 st.session_state.operations_df_sample = generate_operations_data_df(operations_rows)
                 st.session_state.df = st.session_state.operations_df_sample  # Set as active dataset
             st.success(f"✅ Generated {len(st.session_state.operations_df_sample):,} shipment records!")
+            st.rerun()
         
         if st.session_state.operations_df_sample is not None:
-            st.dataframe(st.session_state.operations_df_sample.head(10), use_container_width=True)
+            st.dataframe(st.session_state.operations_df_sample.head(10), width='stretch')
             
             # Show data quality summary
             col1, col2, col3 = st.columns(3)
@@ -1265,7 +1298,7 @@ elif page == "📁 Data Upload":
             with col3:
                 st.metric("Data Quality", f"{((1 - st.session_state.operations_df_sample.isnull().sum().sum() / (len(st.session_state.operations_df_sample) * len(st.session_state.operations_df_sample.columns))) * 100):.1f}%")
             
-            csv = st.session_state.operations_df_sample.to_csv(index=False)
+            csv = st.session_state.operations_df_sample.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Operations CSV",
                 data=csv,
@@ -1282,16 +1315,21 @@ elif page == "📁 Data Upload":
         with col1:
             st.write("Service requests, permits, citizen cases, response times - complex & messy")
         with col2:
-            government_rows = st.number_input("Rows", min_value=100, max_value=1000000, value=50000, step=10000, key="government_sample_rows")
+            government_rows = st.number_input("Rows", min_value=100, max_value=50000, value=10000, step=5000, key="government_sample_rows")
+        
+        if government_rows > 25000:
+            st.warning("⚠️ Large datasets may cause memory issues on Streamlit Cloud. Consider using ≤25,000 rows.")
         
         if st.button("Generate Government Data", type="primary", key="gen_government_sample"):
             with st.spinner(f"Generating {government_rows:,} records... This may take a moment for large datasets..."):
+                clear_unused_sample_data('government_df_sample')  # Free memory
                 st.session_state.government_df_sample = generate_government_data_df(government_rows)
                 st.session_state.df = st.session_state.government_df_sample  # Set as active dataset
             st.success(f"✅ Generated {len(st.session_state.government_df_sample):,} public sector records!")
+            st.rerun()
         
         if st.session_state.government_df_sample is not None:
-            st.dataframe(st.session_state.government_df_sample.head(10), use_container_width=True)
+            st.dataframe(st.session_state.government_df_sample.head(10), width='stretch')
             
             # Show data quality summary
             col1, col2, col3 = st.columns(3)
@@ -1302,7 +1340,7 @@ elif page == "📁 Data Upload":
             with col3:
                 st.metric("Data Quality", f"{((1 - st.session_state.government_df_sample.isnull().sum().sum() / (len(st.session_state.government_df_sample) * len(st.session_state.government_df_sample.columns))) * 100):.1f}%")
             
-            csv = st.session_state.government_df_sample.to_csv(index=False)
+            csv = st.session_state.government_df_sample.to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Government CSV",
                 data=csv,
@@ -1313,6 +1351,7 @@ elif page == "📁 Data Upload":
         
         st.info("💡 **Tip:** Download these files and place them in `tests/data/` for permanent use")
         st.info("⚠️ **Note:** These datasets contain realistic data quality issues including missing values, duplicates, inconsistent formatting, and data entry errors - perfect for testing data cleaning and validation workflows!")
+        st.info("🌐 **Cloud Note:** For Streamlit Community Cloud, datasets ≤25,000 rows recommended to avoid memory issues.")
 
 
 elif page == "🤖 AI Insights":
@@ -1338,7 +1377,7 @@ elif page == "🤖 AI Insights":
             )
         
         with col2:
-            if st.button("🤖 Generate AI Insights", type="primary", width='stretch'):
+            if st.button("🤖 Generate AI Insights", type="primary", use_container_width=True):
                 with st.spinner("AI is analyzing your data... This may take a moment."):
                     
                     if analysis_type == "Comprehensive Overview":
@@ -1404,7 +1443,7 @@ elif page == "💬 AI Chat Assistant":
             )
         
         with col2:
-            send_button = st.button("Send", type="primary", width='stretch')
+            send_button = st.button("Send", type="primary", use_container_width=True)
         
         if send_button and user_question:
             # Add user message to history
@@ -1780,7 +1819,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        if st.button("Interpret Moving Average Forecast", width='stretch', key="interpret_ma"):
+                        if st.button("Interpret Moving Average Forecast", use_container_width=True, key="interpret_ma"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['ma_forecast'], "Moving Average")
@@ -1795,7 +1834,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                             st.markdown("</div>", unsafe_allow_html=True)
                     
                     with col2:
-                        if st.button("Interpret Exponential Smoothing Forecast", width='stretch', key="interpret_es"):
+                        if st.button("Interpret Exponential Smoothing Forecast", use_container_width=True, key="interpret_es"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['es_forecast'], "Exponential Smoothing")
@@ -1981,7 +2020,7 @@ elif page == "📄 AI Report Generator":
             include_charts = st.checkbox("Include Key Metrics", value=True)
         
         with col3:
-            if st.button("🤖 Generate AI Report", type="primary", width='stretch'):
+            if st.button("🤖 Generate AI Report", type="primary", use_container_width=True):
                 with st.spinner("AI is generating your comprehensive report... This may take a minute."):
                     report = generate_automated_report(df)
                     st.session_state.generated_report = report
@@ -2021,7 +2060,7 @@ elif page == "📄 AI Report Generator":
                     data=st.session_state.generated_report,
                     file_name=f"ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    width='stretch'
+                    use_container_width=True
                 )
             
             with col2:
@@ -2047,7 +2086,7 @@ Generated by AI-Powered BI Dashboard
                     data=full_report,
                     file_name=f"full_ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain",
-                    width='stretch'
+                    use_container_width=True
                 )
 
 elif page == "📥 Export":
@@ -2066,7 +2105,7 @@ elif page == "📥 Export":
         
         with col1:
             if export_type == "CSV":
-                csv = df.to_csv(index=False)
+                csv = df.to_csv(index=False).encode('utf-8')
                 st.download_button(
                     label="📥 Download as CSV",
                     data=csv,
