@@ -98,6 +98,11 @@ st.markdown("""
 if 'df' not in st.session_state:
     st.session_state.df = None
 if 'gemini_api_key' not in st.session_state:
+    st.session_state.gemini_api_key = None
+if 'show_report' not in st.session_state:
+    st.session_state.show_report = False
+if 'show_metrics' not in st.session_state:
+    st.session_state.show_metrics = False
     # Try to get API key from environment variables
     st.session_state.gemini_api_key = os.getenv('GEMINI_API_KEY')
 if 'gemini_model' not in st.session_state:
@@ -2071,12 +2076,19 @@ elif page == "📄 AI Report Generator":
         
         with col3:
             if st.button("🤖 Generate AI Report", type="primary"):
-                with st.spinner("AI is generating your comprehensive report... This may take a minute."):
-                    report = generate_automated_report(df, report_type)
-                    st.session_state.generated_report = report
-                    st.session_state.report_type = report_type
+                try:
+                    with st.spinner("AI is generating your comprehensive report... This may take a minute."):
+                        report = generate_automated_report(df, report_type)
+                        st.session_state.generated_report = report
+                        st.session_state.report_type = report_type
+                        st.session_state.show_report = True
+                        st.session_state.show_metrics = include_charts
+                except Exception as e:
+                    handle_error(e)
+                    st.session_state.show_report = False
+                    st.session_state.show_metrics = False
         
-        if 'generated_report' in st.session_state:
+        if 'generated_report' in st.session_state and st.session_state.get('show_report', False):
             st.markdown("---")
             
             # Display report
@@ -2086,7 +2098,7 @@ elif page == "📄 AI Report Generator":
             st.markdown("</div>", unsafe_allow_html=True)
             
             # Show key metrics if requested
-            if include_charts:
+            if st.session_state.get('show_metrics', False):
                 st.markdown("---")
                 st.subheader("📊 Key Metrics Dashboard")
                 
@@ -2117,20 +2129,31 @@ Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
 
 {st.session_state.generated_report}
 """
-                st.download_button(
+                if st.download_button(
                     label=f"📥 Download {report_type} Report",
                     data=current_report,
                     file_name=f"ai_report_{report_type.lower().replace(' ', '_')}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_UTC.txt",
                     mime="text/plain",
                     key="download_current_report"
-                )
+                ):
+                    st.session_state.show_report = False
             
             with col2:
                 # Generate and download comprehensive report
                 if st.button("Generate Full Report", key="generate_full"):
-                    with st.spinner("Generating comprehensive report..."):
-                        full_report_text = generate_automated_report(df, "comprehensive")
-                        utc_time = datetime.now(timezone.utc)
+                    success = True
+                    try:
+                        with st.spinner("Generating comprehensive report..."):
+                            full_report_text = generate_automated_report(df, "comprehensive")
+                            st.session_state.show_report = False
+                            utc_time = datetime.now(timezone.utc)
+                    except Exception as e:
+                        handle_error(e)
+                        st.session_state.show_report = False
+                        success = False
+                    
+                    if not success:
+                        st.stop()
                         full_report = f"""
 COMPREHENSIVE AI BUSINESS INTELLIGENCE REPORT
 Generated: {utc_time.strftime('%Y-%m-%d %H:%M:%S UTC')}
