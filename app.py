@@ -404,6 +404,479 @@ def generate_finance_data_df(rows):
     
     return pd.DataFrame(data, columns=['transaction_id', 'timestamp', 'account_id', 'transaction_type', 'amount', 'balance', 'currency', 'merchant'])
 
+
+def generate_industry_agnostic_data_df(rows):
+    """Generate industry-agnostic business data as DataFrame - complex and messy"""
+    import random
+    
+    departments = ['Sales', 'Marketing', 'IT', 'HR', 'Finance', 'Operations', 'Customer Service', 'R&D', 'Legal', 'Logistics']
+    statuses = ['Active', 'Pending', 'Completed', 'Cancelled', 'On Hold', 'In Progress', 'Review', 'Approved', None, 'ACTIVE', 'active']
+    priorities = ['High', 'Medium', 'Low', 'Critical', 'Normal', None, 'HIGH', 'high']
+    categories = ['Project', 'Task', 'Initiative', 'Request', 'Issue', 'Improvement', 'Maintenance', None]
+    locations = ['New York', 'London', 'Tokyo', 'Singapore', 'Sydney', 'Toronto', 'Berlin', 'Paris', 'Mumbai', 'São Paulo', None, 'NYC', 'N/A']
+    
+    data = []
+    base_date = datetime(2020, 1, 1)
+    
+    for i in range(1, min(rows + 1, 1000001)):  # Cap at 1,000,000
+        record_id = f"REC{i:010d}"
+        
+        # Introduce messy dates
+        if random.random() < 0.05:  # 5% null dates
+            created_date = None
+            updated_date = None
+        else:
+            created_date = (base_date + timedelta(days=random.randint(0, 1825))).strftime('%Y-%m-%d')
+            days_later = random.randint(0, 365)
+            updated_date = (datetime.strptime(created_date, '%Y-%m-%d') + timedelta(days=days_later)).strftime('%Y-%m-%d')
+        
+        department = random.choice(departments)
+        status = random.choice(statuses)
+        priority = random.choice(priorities)
+        category = random.choice(categories)
+        location = random.choice(locations)
+        
+        # Messy numeric data with nulls and inconsistencies
+        budget = round(random.uniform(1000, 500000), 2) if random.random() > 0.08 else None
+        actual_cost = round(random.uniform(500, 600000), 2) if random.random() > 0.1 else None
+        
+        # Messy percentage data
+        completion_pct = round(random.uniform(0, 100), 1) if random.random() > 0.07 else None
+        
+        # Messy employee counts
+        team_size = random.randint(1, 50) if random.random() > 0.06 else None
+        
+        # Rating with inconsistencies
+        rating = round(random.uniform(1, 5), 1) if random.random() > 0.12 else None
+        
+        # Messy text fields
+        notes = random.choice([
+            'Follow up needed',
+            'Waiting for approval',
+            'In progress - see attached',
+            '',
+            None,
+            'TBD',
+            'N/A',
+            'Contact John for details',
+            'URGENT!!!',
+            'na'
+        ])
+        
+        # Owner field with inconsistencies
+        owner = random.choice([
+            f'user{random.randint(1, 500)}@company.com',
+            f'User {random.randint(1, 500)}',
+            None,
+            'TBD',
+            'Unassigned',
+            '',
+            'N/A'
+        ])
+        
+        data.append([
+            record_id, created_date, updated_date, department, category, 
+            status, priority, location, budget, actual_cost, 
+            completion_pct, team_size, rating, owner, notes
+        ])
+        
+        # Add some duplicate records (2% chance)
+        if random.random() < 0.02 and i > 100:
+            data.append(data[-1])
+    
+    df = pd.DataFrame(data, columns=[
+        'record_id', 'created_date', 'updated_date', 'department', 'category',
+        'status', 'priority', 'location', 'budget', 'actual_cost',
+        'completion_percentage', 'team_size', 'rating', 'owner', 'notes'
+    ])
+    
+    return df
+
+def generate_manufacturing_data_df(rows):
+    """Generate manufacturing operations data as DataFrame - complex and messy"""
+    import random
+    
+    plants = ['Plant A', 'Plant B', 'Plant C', 'Plant D', 'Plant E', None, 'PLANT A', 'plant_a']
+    production_lines = ['Line 1', 'Line 2', 'Line 3', 'Line 4', 'Line 5', 'Line 6', None]
+    product_types = ['Widget-A', 'Widget-B', 'Gadget-X', 'Component-12', 'Assembly-Z', 'Part-456', None]
+    shifts = ['Day', 'Night', 'Evening', 'DAY', 'day', None, 'Swing']
+    quality_statuses = ['Pass', 'Fail', 'Pending', 'Rework', 'Scrap', None, 'PASS', 'pass']
+    machine_statuses = ['Running', 'Idle', 'Maintenance', 'Breakdown', 'Setup', None, 'RUNNING']
+    suppliers = ['Supplier-A', 'Supplier-B', 'Supplier-C', 'Supplier-D', 'Supplier-E', None, 'TBD']
+    
+    data = []
+    base_date = datetime(2022, 1, 1)
+    
+    for i in range(1, min(rows + 1, 1000001)):  # Cap at 1,000,000
+        batch_id = f"BATCH{i:012d}"
+        
+        # Messy timestamps
+        if random.random() < 0.04:
+            production_date = None
+            start_time = None
+            end_time = None
+        else:
+            production_date = (base_date + timedelta(days=random.randint(0, 1095))).strftime('%Y-%m-%d')
+            hour = random.randint(0, 23)
+            minute = random.randint(0, 59)
+            start_time = f"{hour:02d}:{minute:02d}:00"
+            duration = random.randint(30, 480)  # 30 min to 8 hours
+            end_hour = (hour + duration // 60) % 24
+            end_minute = (minute + duration % 60) % 60
+            end_time = f"{end_hour:02d}:{end_minute:02d}:00"
+        
+        plant = random.choice(plants)
+        line = random.choice(production_lines)
+        product = random.choice(product_types)
+        shift = random.choice(shifts)
+        
+        # Messy production quantities
+        planned_qty = random.randint(100, 10000) if random.random() > 0.05 else None
+        actual_qty = random.randint(50, 10000) if random.random() > 0.06 else None
+        defect_qty = random.randint(0, 500) if random.random() > 0.08 else None
+        
+        # Calculate yield with inconsistencies
+        if actual_qty and planned_qty and planned_qty > 0:
+            yield_pct = round((actual_qty / planned_qty) * 100, 2)
+            # Add some data errors
+            if random.random() < 0.03:
+                yield_pct = round(random.uniform(100, 150), 2)  # Impossible yield
+        else:
+            yield_pct = None
+        
+        quality_status = random.choice(quality_statuses)
+        machine_status = random.choice(machine_statuses)
+        
+        # Messy machine metrics
+        machine_id = f"MCH{random.randint(1, 200):04d}" if random.random() > 0.04 else None
+        downtime_mins = random.randint(0, 480) if random.random() > 0.1 else None
+        temperature = round(random.uniform(15, 95), 1) if random.random() > 0.09 else None
+        pressure = round(random.uniform(50, 300), 1) if random.random() > 0.09 else None
+        
+        # Cost data with inconsistencies
+        material_cost = round(random.uniform(100, 50000), 2) if random.random() > 0.07 else None
+        labor_cost = round(random.uniform(50, 5000), 2) if random.random() > 0.08 else None
+        
+        supplier = random.choice(suppliers)
+        
+        # Messy operator data
+        operator_id = f"OPR{random.randint(1, 500):05d}" if random.random() > 0.06 else None
+        
+        # Notes with inconsistencies
+        notes = random.choice([
+            'Normal operation',
+            'Machine calibration needed',
+            'Quality issues detected',
+            '',
+            None,
+            'TBD',
+            'SEE SUPERVISOR',
+            'Material shortage',
+            'na',
+            'N/A'
+        ])
+        
+        data.append([
+            batch_id, production_date, start_time, end_time, plant, line,
+            product, shift, planned_qty, actual_qty, defect_qty, yield_pct,
+            quality_status, machine_id, machine_status, downtime_mins,
+            temperature, pressure, material_cost, labor_cost, supplier,
+            operator_id, notes
+        ])
+        
+        # Add duplicate records (1.5% chance)
+        if random.random() < 0.015 and i > 100:
+            data.append(data[-1])
+    
+    df = pd.DataFrame(data, columns=[
+        'batch_id', 'production_date', 'start_time', 'end_time', 'plant', 'production_line',
+        'product_type', 'shift', 'planned_quantity', 'actual_quantity', 'defect_quantity', 'yield_percentage',
+        'quality_status', 'machine_id', 'machine_status', 'downtime_minutes',
+        'temperature_celsius', 'pressure_psi', 'material_cost', 'labor_cost', 'supplier',
+        'operator_id', 'notes'
+    ])
+    
+    return df
+
+def generate_operations_data_df(rows):
+    """Generate operations/logistics data as DataFrame - complex and messy"""
+    import random
+    
+    warehouses = ['WH-North', 'WH-South', 'WH-East', 'WH-West', 'WH-Central', None, 'WH-NORTH', 'wh_north']
+    carriers = ['FedEx', 'UPS', 'DHL', 'USPS', 'Local Courier', None, 'TBD', 'fedex']
+    shipment_types = ['Standard', 'Express', 'Overnight', 'Economy', 'Priority', None, 'STANDARD']
+    statuses = ['Delivered', 'In Transit', 'Pending', 'Delayed', 'Cancelled', 'Lost', 'Returned', None, 'DELIVERED']
+    regions = ['Northeast', 'Southeast', 'Midwest', 'Southwest', 'West Coast', 'International', None]
+    order_types = ['B2B', 'B2C', 'Internal', 'Return', 'Exchange', None, 'b2b']
+    
+    data = []
+    base_date = datetime(2021, 1, 1)
+    
+    for i in range(1, min(rows + 1, 1000001)):  # Cap at 1,000,000
+        order_id = f"ORD{i:012d}"
+        shipment_id = f"SHIP{i:012d}" if random.random() > 0.05 else None
+        tracking_num = f"TRK{random.randint(1000000000, 9999999999)}" if random.random() > 0.08 else None
+        
+        # Messy dates
+        if random.random() < 0.04:
+            order_date = None
+            ship_date = None
+            delivery_date = None
+        else:
+            order_date = (base_date + timedelta(days=random.randint(0, 1460))).strftime('%Y-%m-%d')
+            ship_delay = random.randint(0, 14)
+            ship_date = (datetime.strptime(order_date, '%Y-%m-%d') + timedelta(days=ship_delay)).strftime('%Y-%m-%d')
+            
+            # Delivery date (sometimes before ship date - data error)
+            if random.random() < 0.02:
+                delivery_delay = random.randint(-5, 0)  # Data error: delivered before shipped
+            else:
+                delivery_delay = random.randint(1, 21)
+            
+            if random.random() > 0.15:  # 15% no delivery date yet
+                delivery_date = (datetime.strptime(ship_date, '%Y-%m-%d') + timedelta(days=delivery_delay)).strftime('%Y-%m-%d')
+            else:
+                delivery_date = None
+        
+        warehouse = random.choice(warehouses)
+        carrier = random.choice(carriers)
+        shipment_type = random.choice(shipment_types)
+        status = random.choice(statuses)
+        region = random.choice(regions)
+        order_type = random.choice(order_types)
+        
+        # Messy package metrics
+        weight_kg = round(random.uniform(0.1, 500), 2) if random.random() > 0.06 else None
+        
+        # Dimension inconsistencies
+        length_cm = round(random.uniform(5, 200), 1) if random.random() > 0.07 else None
+        width_cm = round(random.uniform(5, 150), 1) if random.random() > 0.07 else None
+        height_cm = round(random.uniform(5, 150), 1) if random.random() > 0.07 else None
+        
+        # Calculate volume with potential errors
+        if length_cm and width_cm and height_cm:
+            volume_cm3 = round(length_cm * width_cm * height_cm, 2)
+        else:
+            volume_cm3 = None
+        
+        # Quantity data
+        items_count = random.randint(1, 100) if random.random() > 0.05 else None
+        
+        # Cost data with inconsistencies
+        shipping_cost = round(random.uniform(5, 500), 2) if random.random() > 0.08 else None
+        insurance_cost = round(random.uniform(0, 100), 2) if random.random() > 0.12 else None
+        
+        # Distance
+        distance_km = round(random.uniform(10, 15000), 1) if random.random() > 0.1 else None
+        
+        # Customer data
+        customer_id = f"CUST{random.randint(1, 50000):08d}" if random.random() > 0.04 else None
+        
+        # Destination
+        destination_zip = f"{random.randint(10000, 99999)}" if random.random() > 0.06 else None
+        
+        # Priority with inconsistencies
+        priority = random.choice(['High', 'Medium', 'Low', 'Critical', None, 'HIGH', 'high'])
+        
+        # Delivery attempts
+        delivery_attempts = random.randint(1, 5) if random.random() > 0.15 else None
+        
+        # Damaged flag with inconsistencies
+        is_damaged = random.choice([True, False, None, 'Yes', 'No', 'TRUE', 'false', 1, 0])
+        
+        # Notes
+        notes = random.choice([
+            'Standard delivery',
+            'Customer not home',
+            'Left at door',
+            'Signature required',
+            '',
+            None,
+            'URGENT',
+            'Handle with care',
+            'na',
+            'N/A',
+            'See tracking for details'
+        ])
+        
+        data.append([
+            order_id, shipment_id, tracking_num, order_date, ship_date, delivery_date,
+            warehouse, carrier, shipment_type, status, region, order_type,
+            weight_kg, length_cm, width_cm, height_cm, volume_cm3, items_count,
+            shipping_cost, insurance_cost, distance_km, customer_id, destination_zip,
+            priority, delivery_attempts, is_damaged, notes
+        ])
+        
+        # Add duplicate records (1% chance)
+        if random.random() < 0.01 and i > 100:
+            data.append(data[-1])
+    
+    df = pd.DataFrame(data, columns=[
+        'order_id', 'shipment_id', 'tracking_number', 'order_date', 'ship_date', 'delivery_date',
+        'warehouse', 'carrier', 'shipment_type', 'status', 'region', 'order_type',
+        'weight_kg', 'length_cm', 'width_cm', 'height_cm', 'volume_cm3', 'items_count',
+        'shipping_cost', 'insurance_cost', 'distance_km', 'customer_id', 'destination_zip',
+        'priority', 'delivery_attempts', 'is_damaged', 'notes'
+    ])
+    
+    return df
+
+def generate_government_data_df(rows):
+    """Generate government/public sector data as DataFrame - complex and messy"""
+    import random
+    
+    departments = ['Public Works', 'Education', 'Health Services', 'Transportation', 'Parks & Recreation', 
+                   'Public Safety', 'Housing', 'Environmental', 'Finance', 'Administration', None, 'PUBLIC WORKS']
+    request_types = ['Service Request', 'Permit', 'License', 'Complaint', 'Information', 'Inspection',
+                     'Violation', 'Application', None, 'SERVICE REQUEST']
+    statuses = ['Open', 'Closed', 'In Progress', 'Pending', 'Approved', 'Denied', 'On Hold', 
+                'Under Review', None, 'CLOSED', 'closed']
+    priorities = ['High', 'Medium', 'Low', 'Emergency', 'Routine', None, 'HIGH', 'high']
+    channels = ['Online', 'Phone', 'In-Person', 'Email', 'Mail', 'Mobile App', None, 'ONLINE']
+    districts = ['District 1', 'District 2', 'District 3', 'District 4', 'District 5', 
+                 'District 6', None, 'DISTRICT 1', 'Dist-1']
+    categories = ['Infrastructure', 'Environmental', 'Public Safety', 'Administrative', 
+                  'Health', 'Education', 'Housing', None]
+    
+    data = []
+    base_date = datetime(2019, 1, 1)
+    
+    for i in range(1, min(rows + 1, 1000001)):  # Cap at 1,000,000
+        case_id = f"CASE{i:012d}"
+        reference_num = f"REF{random.randint(100000000, 999999999)}" if random.random() > 0.06 else None
+        
+        # Messy dates
+        if random.random() < 0.05:
+            submitted_date = None
+            assigned_date = None
+            resolved_date = None
+        else:
+            submitted_date = (base_date + timedelta(days=random.randint(0, 2190))).strftime('%Y-%m-%d')
+            
+            if random.random() > 0.1:
+                assign_delay = random.randint(0, 30)
+                assigned_date = (datetime.strptime(submitted_date, '%Y-%m-%d') + timedelta(days=assign_delay)).strftime('%Y-%m-%d')
+            else:
+                assigned_date = None
+            
+            if random.random() > 0.25:  # 25% still open
+                if assigned_date:
+                    resolve_delay = random.randint(1, 365)
+                    resolved_date = (datetime.strptime(assigned_date, '%Y-%m-%d') + timedelta(days=resolve_delay)).strftime('%Y-%m-%d')
+                else:
+                    resolved_date = None
+            else:
+                resolved_date = None
+        
+        department = random.choice(departments)
+        request_type = random.choice(request_types)
+        status = random.choice(statuses)
+        priority = random.choice(priorities)
+        channel = random.choice(channels)
+        district = random.choice(districts)
+        category = random.choice(categories)
+        
+        # Messy location data
+        address = f"{random.randint(1, 9999)} {random.choice(['Main', 'Oak', 'Park', 'Elm', 'Maple'])} {random.choice(['St', 'Ave', 'Blvd', 'Rd', 'Dr'])}" if random.random() > 0.08 else None
+        zip_code = f"{random.randint(10000, 99999)}" if random.random() > 0.07 else None
+        
+        # GPS coordinates with inconsistencies
+        latitude = round(random.uniform(25.0, 49.0), 6) if random.random() > 0.12 else None
+        longitude = round(random.uniform(-125.0, -65.0), 6) if random.random() > 0.12 else None
+        
+        # Citizen data
+        citizen_id = f"CIT{random.randint(1, 500000):010d}" if random.random() > 0.1 else None
+        
+        # Staff assignment
+        assigned_to = random.choice([
+            f'staff{random.randint(1, 200)}@gov.local',
+            f'Employee {random.randint(1, 200)}',
+            None,
+            'Unassigned',
+            'TBD',
+            ''
+        ])
+        
+        # Response time in hours with outliers
+        if submitted_date and resolved_date:
+            days_diff = (datetime.strptime(resolved_date, '%Y-%m-%d') - 
+                        datetime.strptime(submitted_date, '%Y-%m-%d')).days
+            response_time_hrs = days_diff * 24 + random.randint(0, 23)
+            # Add some outliers
+            if random.random() < 0.02:
+                response_time_hrs = random.randint(-100, 0)  # Negative time - data error
+        else:
+            response_time_hrs = None
+        
+        # Cost estimate
+        estimated_cost = round(random.uniform(0, 100000), 2) if random.random() > 0.15 else None
+        actual_cost = round(random.uniform(0, 120000), 2) if random.random() > 0.2 else None
+        
+        # Satisfaction rating
+        satisfaction = random.randint(1, 5) if random.random() > 0.3 else None
+        
+        # Inspection flag
+        requires_inspection = random.choice([True, False, None, 'Yes', 'No', 'TRUE', 1, 0])
+        
+        # Follow-up needed
+        follow_up = random.choice([True, False, None, 'Yes', 'No', 1, 0])
+        
+        # Fiscal year
+        fiscal_year = random.choice(['FY2019', 'FY2020', 'FY2021', 'FY2022', 'FY2023', 'FY2024', None, '2023', 'FY 2023'])
+        
+        # Description
+        description = random.choice([
+            'Pothole repair needed',
+            'Street light out',
+            'Permit application',
+            'Noise complaint',
+            'Park maintenance',
+            'Building inspection required',
+            '',
+            None,
+            'TBD',
+            'See attached documents',
+            'URGENT - immediate attention needed',
+            'na',
+            'N/A'
+        ])
+        
+        # Resolution notes
+        resolution = random.choice([
+            'Completed successfully',
+            'Issue resolved',
+            'Pending additional review',
+            'Referred to another department',
+            '',
+            None,
+            'IN PROGRESS',
+            'Waiting for parts',
+            'na'
+        ]) if status in ['Closed', 'Resolved', 'Completed'] or random.random() < 0.3 else None
+        
+        data.append([
+            case_id, reference_num, submitted_date, assigned_date, resolved_date,
+            department, request_type, status, priority, channel, district, category,
+            address, zip_code, latitude, longitude, citizen_id, assigned_to,
+            response_time_hrs, estimated_cost, actual_cost, satisfaction,
+            requires_inspection, follow_up, fiscal_year, description, resolution
+        ])
+        
+        # Add duplicate records (2% chance)
+        if random.random() < 0.02 and i > 100:
+            data.append(data[-1])
+    
+    df = pd.DataFrame(data, columns=[
+        'case_id', 'reference_number', 'submitted_date', 'assigned_date', 'resolved_date',
+        'department', 'request_type', 'status', 'priority', 'channel', 'district', 'category',
+        'address', 'zip_code', 'latitude', 'longitude', 'citizen_id', 'assigned_to',
+        'response_time_hours', 'estimated_cost', 'actual_cost', 'satisfaction_rating',
+        'requires_inspection', 'follow_up_needed', 'fiscal_year', 'description', 'resolution_notes'
+    ])
+    
+    return df
+
+
 def calculate_kpis(df, date_col, value_col):
     """Calculate key performance indicators"""
     df_sorted = df.sort_values(date_col)
@@ -595,13 +1068,21 @@ elif page == "📁 Data Upload":
     with tab2:
         st.subheader("Generate Sample Data")
         
-        # Initialize session state
+        # Initialize session state for all datasets
         if 'sales_df_sample' not in st.session_state:
             st.session_state.sales_df_sample = None
         if 'healthcare_df_sample' not in st.session_state:
             st.session_state.healthcare_df_sample = None
         if 'finance_df_sample' not in st.session_state:
             st.session_state.finance_df_sample = None
+        if 'industry_agnostic_df_sample' not in st.session_state:
+            st.session_state.industry_agnostic_df_sample = None
+        if 'manufacturing_df_sample' not in st.session_state:
+            st.session_state.manufacturing_df_sample = None
+        if 'operations_df_sample' not in st.session_state:
+            st.session_state.operations_df_sample = None
+        if 'government_df_sample' not in st.session_state:
+            st.session_state.government_df_sample = None
         
         # === SALES DATA ===
         st.markdown("### 💼 Sales Sample Data")
@@ -682,7 +1163,157 @@ elif page == "📁 Data Upload":
                 key="download_finance_sample"
             )
         
+        st.markdown("---")
+        
+        # === INDUSTRY-AGNOSTIC DATA ===
+        st.markdown("### 🌐 Industry-Agnostic Business Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Complex business records: projects, budgets, teams, ratings - messy & realistic")
+        with col2:
+            agnostic_rows = st.number_input("Rows", min_value=100, max_value=1000000, value=50000, step=10000, key="agnostic_sample_rows")
+        
+        if st.button("Generate Industry-Agnostic Data", type="primary", key="gen_agnostic_sample"):
+            with st.spinner(f"Generating {agnostic_rows:,} records... This may take a moment for large datasets..."):
+                st.session_state.industry_agnostic_df_sample = generate_industry_agnostic_data_df(agnostic_rows)
+                st.session_state.df = st.session_state.industry_agnostic_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.industry_agnostic_df_sample):,} business records!")
+        
+        if st.session_state.industry_agnostic_df_sample is not None:
+            st.dataframe(st.session_state.industry_agnostic_df_sample.head(10), use_container_width=True)
+            
+            # Show data quality summary
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Missing Values", st.session_state.industry_agnostic_df_sample.isnull().sum().sum())
+            with col2:
+                st.metric("Duplicates", st.session_state.industry_agnostic_df_sample.duplicated().sum())
+            with col3:
+                st.metric("Data Quality", f"{((1 - st.session_state.industry_agnostic_df_sample.isnull().sum().sum() / (len(st.session_state.industry_agnostic_df_sample) * len(st.session_state.industry_agnostic_df_sample.columns))) * 100):.1f}%")
+            
+            csv = st.session_state.industry_agnostic_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Industry-Agnostic CSV",
+                data=csv,
+                file_name="industry_agnostic_sample.csv",
+                mime="text/csv",
+                key="download_agnostic_sample"
+            )
+        
+        st.markdown("---")
+        
+        # === MANUFACTURING DATA ===
+        st.markdown("### 🏭 Manufacturing Operations Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Production batches, quality metrics, machine data, yield rates - complex & messy")
+        with col2:
+            manufacturing_rows = st.number_input("Rows", min_value=100, max_value=1000000, value=50000, step=10000, key="manufacturing_sample_rows")
+        
+        if st.button("Generate Manufacturing Data", type="primary", key="gen_manufacturing_sample"):
+            with st.spinner(f"Generating {manufacturing_rows:,} records... This may take a moment for large datasets..."):
+                st.session_state.manufacturing_df_sample = generate_manufacturing_data_df(manufacturing_rows)
+                st.session_state.df = st.session_state.manufacturing_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.manufacturing_df_sample):,} production records!")
+        
+        if st.session_state.manufacturing_df_sample is not None:
+            st.dataframe(st.session_state.manufacturing_df_sample.head(10), use_container_width=True)
+            
+            # Show data quality summary
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Missing Values", st.session_state.manufacturing_df_sample.isnull().sum().sum())
+            with col2:
+                st.metric("Duplicates", st.session_state.manufacturing_df_sample.duplicated().sum())
+            with col3:
+                st.metric("Data Quality", f"{((1 - st.session_state.manufacturing_df_sample.isnull().sum().sum() / (len(st.session_state.manufacturing_df_sample) * len(st.session_state.manufacturing_df_sample.columns))) * 100):.1f}%")
+            
+            csv = st.session_state.manufacturing_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Manufacturing CSV",
+                data=csv,
+                file_name="manufacturing_sample.csv",
+                mime="text/csv",
+                key="download_manufacturing_sample"
+            )
+        
+        st.markdown("---")
+        
+        # === OPERATIONS DATA ===
+        st.markdown("### 📦 Operations & Logistics Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Shipments, tracking, warehouses, delivery metrics - complex & messy")
+        with col2:
+            operations_rows = st.number_input("Rows", min_value=100, max_value=1000000, value=50000, step=10000, key="operations_sample_rows")
+        
+        if st.button("Generate Operations Data", type="primary", key="gen_operations_sample"):
+            with st.spinner(f"Generating {operations_rows:,} records... This may take a moment for large datasets..."):
+                st.session_state.operations_df_sample = generate_operations_data_df(operations_rows)
+                st.session_state.df = st.session_state.operations_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.operations_df_sample):,} shipment records!")
+        
+        if st.session_state.operations_df_sample is not None:
+            st.dataframe(st.session_state.operations_df_sample.head(10), use_container_width=True)
+            
+            # Show data quality summary
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Missing Values", st.session_state.operations_df_sample.isnull().sum().sum())
+            with col2:
+                st.metric("Duplicates", st.session_state.operations_df_sample.duplicated().sum())
+            with col3:
+                st.metric("Data Quality", f"{((1 - st.session_state.operations_df_sample.isnull().sum().sum() / (len(st.session_state.operations_df_sample) * len(st.session_state.operations_df_sample.columns))) * 100):.1f}%")
+            
+            csv = st.session_state.operations_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Operations CSV",
+                data=csv,
+                file_name="operations_sample.csv",
+                mime="text/csv",
+                key="download_operations_sample"
+            )
+        
+        st.markdown("---")
+        
+        # === GOVERNMENT DATA ===
+        st.markdown("### 🏛️ Government & Public Sector Data")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("Service requests, permits, citizen cases, response times - complex & messy")
+        with col2:
+            government_rows = st.number_input("Rows", min_value=100, max_value=1000000, value=50000, step=10000, key="government_sample_rows")
+        
+        if st.button("Generate Government Data", type="primary", key="gen_government_sample"):
+            with st.spinner(f"Generating {government_rows:,} records... This may take a moment for large datasets..."):
+                st.session_state.government_df_sample = generate_government_data_df(government_rows)
+                st.session_state.df = st.session_state.government_df_sample  # Set as active dataset
+            st.success(f"✅ Generated {len(st.session_state.government_df_sample):,} public sector records!")
+        
+        if st.session_state.government_df_sample is not None:
+            st.dataframe(st.session_state.government_df_sample.head(10), use_container_width=True)
+            
+            # Show data quality summary
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Missing Values", st.session_state.government_df_sample.isnull().sum().sum())
+            with col2:
+                st.metric("Duplicates", st.session_state.government_df_sample.duplicated().sum())
+            with col3:
+                st.metric("Data Quality", f"{((1 - st.session_state.government_df_sample.isnull().sum().sum() / (len(st.session_state.government_df_sample) * len(st.session_state.government_df_sample.columns))) * 100):.1f}%")
+            
+            csv = st.session_state.government_df_sample.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Government CSV",
+                data=csv,
+                file_name="government_sample.csv",
+                mime="text/csv",
+                key="download_government_sample"
+            )
+        
         st.info("💡 **Tip:** Download these files and place them in `tests/data/` for permanent use")
+        st.info("⚠️ **Note:** These datasets contain realistic data quality issues including missing values, duplicates, inconsistent formatting, and data entry errors - perfect for testing data cleaning and validation workflows!")
+
 
 elif page == "🤖 AI Insights":
     st.header("🤖 AI-Powered Data Insights")
@@ -1195,6 +1826,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                 
         else:
             st.info("Please ensure your dataset has both date and numeric columns for forecasting.")
+
 
 elif page == "📊 Statistical Analysis":
     st.header("📊 Statistical Analysis")
