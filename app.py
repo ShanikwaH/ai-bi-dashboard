@@ -120,12 +120,12 @@ if 'current_report_type' not in st.session_state:
 if 'gemini_model' not in st.session_state:
     st.session_state.gemini_model = None
 if 'model_name' not in st.session_state:
-    st.session_state.model_name = 'gemini-1.5-flash'  # Set default model
+    st.session_state.model_name = 'gemini-2.5-flash'  # Set default model
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
 # Configure Gemini AI
-def configure_gemini(api_key, model_name='gemini-1.5-flash'):
+def configure_gemini(api_key, model_name='gemini-2.5-flash'):
     """Configure Gemini AI with API key"""
     if not api_key:
         st.error("🔑 Please provide a Gemini API key.")
@@ -1040,7 +1040,7 @@ with st.sidebar:
         
         model_choice = st.selectbox(
             "Select AI Model",
-            ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp"],
+            ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash-exp"],
             help="Flash is faster & cheaper, Pro is more capable, 2.0 is experimental"
         )
         
@@ -1058,7 +1058,7 @@ with st.sidebar:
                 st.error("Please enter an API key")
         
         if st.session_state.gemini_api_key:
-            current_model = st.session_state.get('model_name', 'gemini-1.5-flash')
+            current_model = st.session_state.get('model_name', 'gemini-2.5-flash')
             st.success(f"🤖 AI: Connected ({current_model})")
             if st.button("Disconnect"):
                 st.session_state.gemini_api_key = None
