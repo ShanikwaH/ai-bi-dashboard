@@ -254,7 +254,7 @@ Keep the response concise but insightful."""
         return f"Error generating interpretation: {str(e)}"
 
 # Generate automated report
-def generate_automated_report(df):
+def generate_automated_report(df, report_type="Executive Summary"):
     """Generate comprehensive AI report with accurate timestamps"""
     if st.session_state.gemini_model is None:
         return "Please configure Gemini API key first."
@@ -271,6 +271,80 @@ def generate_automated_report(df):
         
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         
+        # Customize report content based on type
+        if report_type == "Executive Summary":
+            report_instructions = """
+            Generate a concise EXECUTIVE SUMMARY report for C-suite executives.
+            Focus on high-level insights and strategic implications.
+            
+            Please provide:
+            1. Executive Summary (3-4 sentences highlighting the most critical insights)
+            2. Key Performance Indicators (top 3-5 metrics with brief analysis)
+            3. Strategic Insights (2-3 major findings)
+            4. Business Impact Assessment
+            5. Critical Recommendations (3-5 actionable items)
+            6. Executive Decision Points
+            
+            Keep it concise, strategic, and action-oriented. Avoid technical details.
+            """
+        elif report_type == "Detailed Analysis":
+            report_instructions = """
+            Generate a comprehensive DETAILED ANALYSIS report.
+            Include in-depth statistical analysis and thorough explanations.
+            
+            Please provide:
+            1. Overview and Context
+            2. Detailed Statistical Analysis (with specific numbers and percentages)
+            3. Comprehensive Trends Analysis (identify patterns, seasonality, cycles)
+            4. Correlation and Relationship Analysis
+            5. Segment Analysis (break down by categories/dimensions)
+            6. Anomaly and Outlier Detection
+            7. Detailed Performance Metrics
+            8. Risk Assessment and Mitigation Strategies
+            9. Comprehensive Recommendations with Implementation Steps
+            10. Technical Appendix (methodology notes)
+            
+            Be thorough, analytical, and include specific data points.
+            """
+        elif report_type == "Performance Review":
+            report_instructions = """
+            Generate a PERFORMANCE REVIEW report focused on metrics and KPIs.
+            Emphasize performance tracking and goal assessment.
+            
+            Please provide:
+            1. Performance Summary Overview
+            2. Key Performance Indicators Analysis
+            3. Performance vs. Benchmarks/Targets
+            4. Trend Analysis (improving/declining metrics)
+            5. Top Performing Areas (strengths)
+            6. Underperforming Areas (weaknesses requiring attention)
+            7. Period-over-Period Comparisons
+            8. Performance Drivers (factors influencing results)
+            9. Improvement Recommendations
+            10. Action Plan for Optimization
+            
+            Focus on measurable outcomes and performance metrics.
+            """
+        else:  # Strategic Insights
+            report_instructions = """
+            Generate a STRATEGIC INSIGHTS report for long-term planning.
+            Focus on strategic opportunities and competitive positioning.
+            
+            Please provide:
+            1. Strategic Context and Market Position
+            2. Key Strategic Insights (3-5 major findings)
+            3. Opportunity Analysis (growth opportunities identified)
+            4. Competitive Advantages (strengths to leverage)
+            5. Strategic Risks and Threats
+            6. Market Trends and Future Outlook
+            7. Strategic Recommendations (3-5 major initiatives)
+            8. Investment Priorities
+            9. Implementation Roadmap
+            10. Success Metrics for Strategic Goals
+            
+            Think long-term and focus on strategic positioning.
+            """
+        
         report_data = f"""
         CRITICAL INSTRUCTION: You MUST use the current date provided below in your report. 
         DO NOT use any other date. DO NOT use "October 26, 2023" or any historical date.
@@ -278,8 +352,8 @@ def generate_automated_report(df):
         CURRENT DATE FOR THIS REPORT: {report_date}
         CURRENT UTC TIMESTAMP: {utc_timestamp}
         
-        Generate a comprehensive executive business intelligence report for the following dataset.
-        Start your report with "Executive Business Intelligence Report" followed by a title, 
+        Generate a {report_type.upper()} business intelligence report for the following dataset.
+        Start your report with "{report_type}" as the title, followed by a descriptive subtitle,
         and use the date "{report_date}" shown above.
         
         Dataset Metrics:
@@ -290,14 +364,7 @@ def generate_automated_report(df):
         Statistical Summary:
         {df[numeric_cols].describe().to_string()}
         
-        Please provide:
-        1. Executive Summary (2-3 sentences)
-        2. Key Findings (bullet points)
-        3. Trends Analysis
-        4. Performance Metrics Assessment
-        5. Risk Factors
-        6. Strategic Recommendations
-        7. Next Steps
+        {report_instructions}
         
         Format as a professional business report.
         REMEMBER: Use the date {report_date} at the start of your report.
@@ -2045,7 +2112,7 @@ elif page == "📄 AI Report Generator":
         with col3:
             if st.button("🤖 Generate AI Report", type="primary"):
                 with st.spinner("AI is generating your comprehensive report... This may take a minute."):
-                    report = generate_automated_report(df)
+                    report = generate_automated_report(df, report_type)
                     st.session_state.generated_report = report
         
         if 'generated_report' in st.session_state:
