@@ -2077,42 +2077,75 @@ elif page == "📄 AI Report Generator":
         with col3:
             if st.button("🤖 Generate AI Report", type="primary"):
                 try:
+                    # Clear all report displays first
+                    st.session_state.show_regular_report = False
+                    st.session_state.show_full_report = False
+                    st.session_state.show_executive_download = False
+                    st.session_state.show_full_download = False
+                    
                     with st.spinner("AI is generating your comprehensive report... This may take a minute."):
                         report = generate_automated_report(df, report_type)
                         st.session_state.generated_report = report
                         st.session_state.report_type = report_type
                         st.session_state.current_report_type = report_type
-                        st.session_state.show_regular_report = True
-                        st.session_state.show_full_report = False
+                        
+                        if report_type == "Executive Summary":
+                            st.session_state.show_executive_report = True
+                        else:
+                            st.session_state.show_regular_report = True
+                        
                         st.session_state.show_metrics = include_charts
                 except Exception as e:
                     handle_error(e)
                     st.session_state.show_regular_report = False
                     st.session_state.show_full_report = False
+                    st.session_state.show_executive_report = False
                     st.session_state.show_metrics = False
         
-        # Clear any existing reports if we're generating a new one
-        if report_type != st.session_state.get('current_report_type', None):
-            st.session_state.show_full_report = False
-            st.session_state.show_regular_report = False
-        
+        # Initialize session state variables if not exist
+        if 'show_executive_report' not in st.session_state:
+            st.session_state.show_executive_report = False
+        if 'show_executive_download' not in st.session_state:
+            st.session_state.show_executive_download = False
+        if 'show_full_download' not in st.session_state:
+            st.session_state.show_full_download = False
+            
+        # Display appropriate section based on state
         if 'generated_report' in st.session_state:
-            if st.session_state.get('show_regular_report', False) and not st.session_state.get('show_full_report', False):
+            # Show Executive Summary Report
+            if st.session_state.get('show_executive_report', False):
                 st.markdown("---")
+                st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
+                st.markdown("### 📄 Executive Summary Report")
+                st.markdown(st.session_state.generated_report)
+                st.markdown("</div>", unsafe_allow_html=True)
                 
-                # Display report
+                if st.session_state.get('show_metrics', False):
+                    st.markdown("---")
+                    st.subheader("📊 Key Executive Metrics")
+                    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+                    if len(numeric_cols) >= 1:
+                        cols = st.columns(min(4, len(numeric_cols)))
+                        for idx, col_name in enumerate(numeric_cols[:4]):
+                            with cols[idx]:
+                                st.metric(
+                                    col_name,
+                                    f"{df[col_name].mean():,.2f}",
+                                    delta=f"{df[col_name].std():.2f} σ"
+                                )
+            
+            # Show Regular Report
+            elif st.session_state.get('show_regular_report', False):
+                st.markdown("---")
                 st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
                 st.markdown(f"### 📄 {report_type} Report")
                 st.markdown(st.session_state.generated_report)
                 st.markdown("</div>", unsafe_allow_html=True)
                 
-                # Show key metrics if requested
                 if st.session_state.get('show_metrics', False):
                     st.markdown("---")
                     st.subheader("📊 Key Metrics Dashboard")
-                    
                     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-                    
                     if len(numeric_cols) >= 1:
                         cols = st.columns(min(4, len(numeric_cols)))
                         for idx, col_name in enumerate(numeric_cols[:4]):
@@ -2145,25 +2178,38 @@ Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
                     mime="text/plain",
                     key="download_current_report"
                 ):
+                    # Clear all displays after download
                     st.session_state.show_regular_report = False
+                    st.session_state.show_executive_report = False
+                    st.session_state.show_executive_download = False
                     st.session_state.show_full_report = False
+                    st.session_state.show_full_download = False
             
             with col2:
                 # Generate and download comprehensive report
                 if st.button("Generate Full Report", key="generate_full"):
                     success = True
                     try:
+                        # Clear all other displays
+                        st.session_state.show_regular_report = False
+                        st.session_state.show_executive_report = False
+                        st.session_state.show_executive_download = False
+                        st.session_state.show_full_report = False
+                        
                         with st.spinner("Generating comprehensive report..."):
                             full_report_text = generate_automated_report(df, "comprehensive")
                             st.session_state.full_report = full_report_text
                             st.session_state.current_report_type = "comprehensive"
-                            st.session_state.show_regular_report = False
-                            st.session_state.show_full_report = True
+                            st.session_state.show_full_download = True
                             utc_time = datetime.now(timezone.utc)
+                            
+                            # Display full report download section
+                            st.markdown("---")
+                            st.markdown("### 📄 Comprehensive Report Ready")
+                            st.markdown("Your full report has been generated and is ready for download.")
                     except Exception as e:
                         handle_error(e)
-                        st.session_state.show_regular_report = False
-                        st.session_state.show_full_report = False
+                        st.session_state.show_full_download = False
                         success = False
                     
                     if not success:
