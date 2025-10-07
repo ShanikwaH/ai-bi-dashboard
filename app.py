@@ -2117,11 +2117,9 @@ elif page == "📄 AI Report Generator":
                 st.session_state.previous_report_type = current_report_type
             
             if current_report_type != st.session_state.previous_report_type:
-                st.session_state.show_executive_report = False
-                st.session_state.show_executive_download = False
-                st.session_state.show_full_download = False
-                st.session_state.show_regular_report = False
-                st.session_state.show_full_report = False
+                # Clear all display states
+                st.session_state.show_initial_report = False
+                st.session_state.show_full_report_section = False
                 st.session_state.show_metrics = False
                 st.session_state.previous_report_type = current_report_type
             
@@ -2133,133 +2131,86 @@ elif page == "📄 AI Report Generator":
         with col3:
             if st.button("🤖 Generate AI Report", type="primary"):
                 try:
-                    # Clear all report displays first
-                    st.session_state.show_regular_report = False
-                    st.session_state.show_full_report = False
-                    st.session_state.show_executive_download = False
-                    st.session_state.show_full_download = False
+                    # Clear all sections first
+                    st.session_state.show_initial_report = False
+                    st.session_state.show_full_report_section = False
                     
                     with st.spinner("AI is generating your comprehensive report... This may take a minute."):
                         report = generate_automated_report(df, report_type)
                         st.session_state.generated_report = report
                         st.session_state.report_type = report_type
                         st.session_state.current_report_type = report_type
-                        
-                        if report_type == "Executive Summary":
-                            st.session_state.show_executive_report = True
-                        else:
-                            st.session_state.show_regular_report = True
-                        
                         st.session_state.show_metrics = include_charts
+                        st.session_state.show_initial_report = True  # Show initial report section
+                        
+                        st.rerun()
                 except Exception as e:
                     handle_error(e)
-                    st.session_state.show_regular_report = False
-                    st.session_state.show_full_report = False
-                    st.session_state.show_executive_report = False
-                    st.session_state.show_metrics = False
+                    st.session_state.show_initial_report = False
+                    st.session_state.show_full_report_section = False
         
         # Initialize session state variables if not exist
-        if 'show_executive_report' not in st.session_state:
-            st.session_state.show_executive_report = False
-        if 'show_executive_download' not in st.session_state:
-            st.session_state.show_executive_download = False
-        if 'show_full_download' not in st.session_state:
-            st.session_state.show_full_download = False
-            
-        # Display appropriate section based on state
-        if 'generated_report' in st.session_state:
-            # Show Executive Summary Report
-            if st.session_state.get('show_executive_report', False):
-                st.markdown("---")
-                st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
-                st.markdown("### 📄 Executive Summary Report")
-                st.markdown(st.session_state.generated_report)
-                st.markdown("</div>", unsafe_allow_html=True)
-                
-                if st.session_state.get('show_metrics', False):
-                    st.markdown("---")
-                    st.subheader("📊 Key Executive Metrics")
-                    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-                    if len(numeric_cols) >= 1:
-                        cols = st.columns(min(4, len(numeric_cols)))
-                        for idx, col_name in enumerate(numeric_cols[:4]):
-                            with cols[idx]:
-                                st.metric(
-                                    col_name,
-                                    f"{df[col_name].mean():,.2f}",
-                                    delta=f"{df[col_name].std():.2f} σ"
-                                )
-            
-            # Show Regular Report
-            elif st.session_state.get('show_regular_report', False):
-                st.markdown("---")
-                st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
-                st.markdown(f"### 📄 {report_type} Report")
-                st.markdown(st.session_state.generated_report)
-                st.markdown("</div>", unsafe_allow_html=True)
-                
-                if st.session_state.get('show_metrics', False):
-                    st.markdown("---")
-                    st.subheader("📊 Key Metrics Dashboard")
-                    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-                    if len(numeric_cols) >= 1:
-                        cols = st.columns(min(4, len(numeric_cols)))
-                        for idx, col_name in enumerate(numeric_cols[:4]):
-                            with cols[idx]:
-                                st.metric(
-                                    col_name,
-                                    f"{df[col_name].mean():,.2f}",
-                                    delta=f"{df[col_name].std():.2f} σ"
-                                )
-            
-            # Download options
+        if 'show_initial_report' not in st.session_state:
+            st.session_state.show_initial_report = False
+        if 'show_full_report_section' not in st.session_state:
+            st.session_state.show_full_report_section = False
+        
+        # Section 1: Initial Report Display (only shown after generating report)
+        if st.session_state.get('show_initial_report', False) and 'generated_report' in st.session_state:
             st.markdown("---")
-            st.subheader("📥 Download Options")
+            st.markdown("<div class='ai-response'>", unsafe_allow_html=True)
+            st.markdown(f"### 📄 {st.session_state.report_type} Report")
+            st.markdown(st.session_state.generated_report)
+            st.markdown("</div>", unsafe_allow_html=True)
             
-            col1, col2 = st.columns(2)
+            if st.session_state.get('show_metrics', False):
+                st.markdown("---")
+                st.subheader("📊 Key Metrics Dashboard")
+                numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+                if len(numeric_cols) >= 1:
+                    cols = st.columns(min(4, len(numeric_cols)))
+                    for idx, col_name in enumerate(numeric_cols[:4]):
+                        with cols[idx]:
+                            st.metric(
+                                col_name,
+                                f"{df[col_name].mean():,.2f}",
+                                delta=f"{df[col_name].std():.2f} σ"
+                            )
             
-            with col1:
-                # Download current report
-                current_report = f"""
-AI Business Intelligence Report - {report_type}
+            # Download button for current report
+            st.markdown("---")
+            current_report = f"""
+AI Business Intelligence Report - {st.session_state.report_type}
 Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
 =======================================================
 
 {st.session_state.generated_report}
 """
-                download_clicked = st.download_button(
-                    label=f"📥 Download {report_type} Report",
-                    data=current_report,
-                    file_name=f"ai_report_{report_type.lower().replace(' ', '_')}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_UTC.txt",
-                    mime="text/plain",
-                    key="download_current_report"
-                )
-                
-                if download_clicked:
-                    # Clear all displays after download
-                    for state_key in ['show_regular_report', 'show_executive_report', 
-                                    'show_executive_download', 'show_full_report',
-                                    'show_full_download', 'show_metrics']:
-                        st.session_state[state_key] = False
-                    st.success("✅ Report downloaded successfully!")
+            st.download_button(
+                label=f"📥 Download {st.session_state.report_type} Report",
+                data=current_report,
+                file_name=f"ai_report_{st.session_state.report_type.lower().replace(' ', '_')}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_UTC.txt",
+                mime="text/plain",
+                key="download_current_report"
+            )
             
-            with col2:
-                # Generate and download comprehensive report
-                if st.button("Generate Full Report", key="generate_full"):
-                    try:
-                        # Clear all other displays first
-                        for state_key in ['show_regular_report', 'show_executive_report', 
-                                        'show_executive_download', 'show_full_report',
-                                        'show_full_download']:
-                            st.session_state[state_key] = False
-                        
-                        with st.spinner("Generating comprehensive report..."):
-                            # Generate the full report with metadata
-                            full_report_text = generate_automated_report(df, "comprehensive")
-                            utc_time = datetime.now(timezone.utc)
-                            
-                            # Create the full report
-                            full_report = f"""
+            # Button to generate full report
+            if st.button("📊 Generate Full Comprehensive Report", key="generate_full"):
+                # Hide initial report section and show full report section
+                st.session_state.show_initial_report = False
+                st.session_state.show_full_report_section = True
+                st.rerun()
+        
+        # Section 2: Full Report Display (only shown after clicking "Generate Full Report")
+        if st.session_state.get('show_full_report_section', False):
+            try:
+                with st.spinner("Generating comprehensive report..."):
+                    # Generate the full report with metadata
+                    full_report_text = generate_automated_report(df, "comprehensive")
+                    utc_time = datetime.now(timezone.utc)
+                    
+                    # Create the full report
+                    full_report = f"""
 COMPREHENSIVE AI BUSINESS INTELLIGENCE REPORT
 Generated: {utc_time.strftime('%Y-%m-%d %H:%M:%S UTC')}
 ========================================================
@@ -2276,122 +2227,73 @@ Date Range: {df.iloc[:, 0].min() if len(df) > 0 else 'N/A'} to {df.iloc[:, 0].ma
 
 Generated by AI-Powered BI Dashboard
 """
-                            # Display download section
-                            st.markdown("---")
-                            st.markdown("### 📄 Comprehensive Report Ready")
-                            
-                            # Add download button
-                            if st.download_button(
-                                label="📥 Download Full Report (TXT)",
-                                data=full_report,
-                                file_name=f"full_ai_report_{utc_time.strftime('%Y%m%d_%H%M%S')}_UTC.txt",
-                                mime="text/plain",
-                                key="download_full_report_button"
-                            ):
-                                st.success("✅ Full report downloaded successfully!")
-                                # Clear display states after download
-                                for state_key in ['show_regular_report', 'show_executive_report', 
-                                                'show_executive_download', 'show_full_report',
-                                                'show_full_download']:
-                                    st.session_state[state_key] = False
-                    except Exception as e:
-                        handle_error(e)
-                        st.warning("⚠️ Failed to generate report. Please try again.")
-                        # Clear all states on error
-                        for state_key in ['show_regular_report', 'show_executive_report', 
-                                        'show_executive_download', 'show_full_report',
-                                        'show_full_download']:
-                            st.session_state[state_key] = False
-                        st.stop()
-                        full_report = f"""
-COMPREHENSIVE AI BUSINESS INTELLIGENCE REPORT
-Generated: {utc_time.strftime('%Y-%m-%d %H:%M:%S UTC')}
-========================================================
-
-{full_report_text}
-
-========================================================
-DATASET STATISTICS
-========================================================
-Total Records: {len(df)}
-Total Columns: {len(df.columns)}
-Numeric Columns: {', '.join(df.select_dtypes(include=[np.number]).columns)}
-Date Range: {df.iloc[:, 0].min() if len(df) > 0 else 'N/A'} to {df.iloc[:, 0].max() if len(df) > 0 else 'N/A'}
-
-Generated by AI-Powered BI Dashboard
-"""
-                        st.download_button(
-                            label="📥 Download Full Report (TXT)",
-                            data=full_report,
-                            file_name=f"full_ai_report_{utc_time.strftime('%Y%m%d_%H%M%S')}_UTC.txt",
-                            mime="text/plain",
-                            key="download_full_report"
-                        )
-            
-            # Display timestamp
-            st.markdown("---")
-            st.markdown("### 📅 Report Timestamp")
-            
-            # Get UTC timestamp from session state if available
-            if 'report_generated_utc' in st.session_state:
-                utc_time = st.session_state.report_generated_utc
-            else:
-                utc_time = datetime.now(timezone.utc)
-            
-            # Use streamlit HTML component for better JavaScript execution
-            utc_iso = utc_time.isoformat()
-            
-            html_code = f"""
-            <div style="padding: 12px; background-color: #e8f4f8; border-left: 4px solid #0066cc; border-radius: 4px; margin: 10px 0;">
-                <strong>Generated (Your Local Time):</strong> <span id="localTimestamp" style="font-family: monospace;">Loading...</span><br>
-                <strong>Your Timezone:</strong> <span id="userTimezone" style="font-family: monospace; color: #666;">Detecting...</span>
-            </div>
-            <script>
-                (function() {{
-                    try {{
-                        // Parse the UTC time
-                        const utcTime = new Date("{utc_iso}");
-                        
-                        // Get user's timezone
-                        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                        
-                        // Format the date in user's local timezone
-                        const localTimeString = utcTime.toLocaleString('en-US', {{
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: true
-                        }});
-                        
-                        // Update the display
-                        const timestampElement = document.getElementById('localTimestamp');
-                        const timezoneElement = document.getElementById('userTimezone');
-                        
-                        if (timestampElement) {{
-                            timestampElement.textContent = localTimeString;
-                        }}
-                        if (timezoneElement) {{
-                            timezoneElement.textContent = userTimezone;
-                        }}
-                    }} catch (error) {{
-                        console.error('Error formatting timestamp:', error);
-                        const timestampElement = document.getElementById('localTimestamp');
-                        if (timestampElement) {{
-                            timestampElement.textContent = 'Error loading time';
-                        }}
-                    }}
-                }})();
-            </script>
-            """
-            
-            html(html_code, height=80)
-            
-            # Also show UTC time for reference
-            utc_time_str = utc_time.strftime('%Y-%m-%d %H:%M:%S UTC')
-            st.caption(f"🌍 UTC Time: {utc_time_str}")
+                    st.markdown("---")
+                    st.markdown("### 📄 Comprehensive Report Ready")
+                    
+                    # Download button for full report
+                    st.download_button(
+                        label="📥 Download Full Report (TXT)",
+                        data=full_report,
+                        file_name=f"full_ai_report_{utc_time.strftime('%Y%m%d_%H%M%S')}_UTC.txt",
+                        mime="text/plain",
+                        key="download_full_report_button"
+                    )
+                    
+                    # Display timestamp
+                    st.markdown("---")
+                    st.markdown("### 📅 Report Timestamp")
+                    
+                    utc_iso = utc_time.isoformat()
+                    
+                    html_code = f"""
+                    <div style="padding: 12px; background-color: #e8f4f8; border-left: 4px solid #0066cc; border-radius: 4px; margin: 10px 0;">
+                        <strong>Generated (Your Local Time):</strong> <span id="localTimestamp" style="font-family: monospace;">Loading...</span><br>
+                        <strong>Your Timezone:</strong> <span id="userTimezone" style="font-family: monospace; color: #666;">Detecting...</span>
+                    </div>
+                    <script>
+                        (function() {{
+                            try {{
+                                const utcTime = new Date("{utc_iso}");
+                                const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                                const localTimeString = utcTime.toLocaleString('en-US', {{
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: true
+                                }});
+                                
+                                const timestampElement = document.getElementById('localTimestamp');
+                                const timezoneElement = document.getElementById('userTimezone');
+                                
+                                if (timestampElement) {{
+                                    timestampElement.textContent = localTimeString;
+                                }}
+                                if (timezoneElement) {{
+                                    timezoneElement.textContent = userTimezone;
+                                }}
+                            }} catch (error) {{
+                                console.error('Error formatting timestamp:', error);
+                                const timestampElement = document.getElementById('localTimestamp');
+                                if (timestampElement) {{
+                                    timestampElement.textContent = 'Error loading time';
+                                }}
+                            }}
+                        }})();
+                    </script>
+                    """
+                    
+                    html(html_code, height=80)
+                    
+                    utc_time_str = utc_time.strftime('%Y-%m-%d %H:%M:%S UTC')
+                    st.caption(f"🌍 UTC Time: {utc_time_str}")
+                    
+            except Exception as e:
+                handle_error(e)
+                st.warning("⚠️ Failed to generate report. Please try again.")
+                st.session_state.show_full_report_section = False
 
 elif page == "📥 Export":
     st.header("📥 Export Data & Reports")
