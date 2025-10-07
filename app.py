@@ -2084,56 +2084,56 @@ elif page == "📄 AI Report Generator":
             else:
                 utc_time = datetime.now(timezone.utc)
             
-# Use streamlit HTML component for better JavaScript execution
-utc_iso = utc_time.isoformat()
-
-html_code = f"""
-<div style="padding: 12px; background-color: #e8f4f8; border-left: 4px solid #0066cc; border-radius: 4px; margin: 10px 0;">
-    <strong>Generated (Your Local Time):</strong> <span id="localTimestamp" style="font-family: monospace;">Loading...</span><br>
-    <strong>Your Timezone:</strong> <span id="userTimezone" style="font-family: monospace; color: #666;">Detecting...</span>
-</div>
-<script>
-    (function() {{
-        try {{
-            // Parse the UTC time
-            const utcTime = new Date("{utc_iso}");
+            # Use streamlit HTML component for better JavaScript execution
+            utc_iso = utc_time.isoformat()
             
-            // Get user's timezone
-            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            html_code = f"""
+            <div style="padding: 12px; background-color: #e8f4f8; border-left: 4px solid #0066cc; border-radius: 4px; margin: 10px 0;">
+                <strong>Generated (Your Local Time):</strong> <span id="localTimestamp" style="font-family: monospace;">Loading...</span><br>
+                <strong>Your Timezone:</strong> <span id="userTimezone" style="font-family: monospace; color: #666;">Detecting...</span>
+            </div>
+            <script>
+                (function() {{
+                    try {{
+                        // Parse the UTC time
+                        const utcTime = new Date("{utc_iso}");
+                        
+                        // Get user's timezone
+                        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                        
+                        // Format the date in user's local timezone
+                        const localTimeString = utcTime.toLocaleString('en-US', {{
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                        }});
+                        
+                        // Update the display
+                        const timestampElement = document.getElementById('localTimestamp');
+                        const timezoneElement = document.getElementById('userTimezone');
+                        
+                        if (timestampElement) {{
+                            timestampElement.textContent = localTimeString;
+                        }}
+                        if (timezoneElement) {{
+                            timezoneElement.textContent = userTimezone;
+                        }}
+                    }} catch (error) {{
+                        console.error('Error formatting timestamp:', error);
+                        const timestampElement = document.getElementById('localTimestamp');
+                        if (timestampElement) {{
+                            timestampElement.textContent = 'Error loading time';
+                        }}
+                    }}
+                }})();
+            </script>
+            """
             
-            // Format the date in user's local timezone
-            const localTimeString = utcTime.toLocaleString('en-US', {{
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-            }});
-            
-            // Update the display
-            const timestampElement = document.getElementById('localTimestamp');
-            const timezoneElement = document.getElementById('userTimezone');
-            
-            if (timestampElement) {{
-                timestampElement.textContent = localTimeString;
-            }}
-            if (timezoneElement) {{
-                timezoneElement.textContent = userTimezone;
-            }}
-        }} catch (error) {{
-            console.error('Error formatting timestamp:', error);
-            const timestampElement = document.getElementById('localTimestamp');
-            if (timestampElement) {{
-                timestampElement.textContent = 'Error loading time';
-            }}
-        }}
-    }})();
-</script>
-"""
-
-html(html_code, height=80)
+            html(html_code, height=80)
             
             # Also show UTC time for reference
             utc_time_str = utc_time.strftime('%Y-%m-%d %H:%M:%S UTC')
