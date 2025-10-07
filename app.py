@@ -1377,7 +1377,7 @@ elif page == "🤖 AI Insights":
             )
         
         with col2:
-            if st.button("🤖 Generate AI Insights", type="primary", use_container_width=True):
+            if st.button("🤖 Generate AI Insights", type="primary"):
                 with st.spinner("AI is analyzing your data... This may take a moment."):
                     
                     if analysis_type == "Comprehensive Overview":
@@ -1443,7 +1443,7 @@ elif page == "💬 AI Chat Assistant":
             )
         
         with col2:
-            send_button = st.button("Send", type="primary", use_container_width=True)
+            send_button = st.button("Send", type="primary")
         
         if send_button and user_question:
             # Add user message to history
@@ -1521,13 +1521,13 @@ elif page == "🔍 Exploratory Analysis":
                     fig = px.histogram(df, x=selected_col, nbins=50, 
                                      title=f"Distribution of {selected_col}",
                                      color_discrete_sequence=['#1f77b4'])
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 
                 with col2:
                     fig = px.box(df, y=selected_col, 
                                title=f"Box Plot of {selected_col}",
                                color_discrete_sequence=['#ff7f0e'])
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
             else:
                 st.info("No numeric columns found in the dataset.")
         
@@ -1554,7 +1554,7 @@ elif page == "🔍 Exploratory Analysis":
                            title="Missing Values by Column (%)",
                            color='Missing %',
                            color_continuous_scale='Reds')
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             else:
                 st.success("✅ No missing values detected in the dataset!")
             
@@ -1595,7 +1595,7 @@ elif page == "📈 Visualizations":
                             title=f"{value_col} Over Time",
                             labels={date_col: "Date", value_col: "Value"})
                 fig.update_layout(height=500)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 kpis = calculate_kpis(df_sorted, date_col, value_col)
                 
@@ -1632,12 +1632,12 @@ elif page == "📈 Visualizations":
                                title=f"{val_col} by {cat_col}",
                                color=val_col,
                                color_continuous_scale='Blues')
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 
                 with col2:
                     fig = px.pie(grouped, values=val_col, names=cat_col,
                                title=f"{val_col} Distribution by {cat_col}")
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
             else:
                 st.info("Please ensure your dataset has both categorical and numeric columns.")
         
@@ -1655,7 +1655,7 @@ elif page == "📈 Visualizations":
                               aspect="auto",
                               title="Correlation Heatmap")
                 fig.update_layout(height=600)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 st.subheader("Strongest Correlations")
                 
@@ -1687,7 +1687,7 @@ elif page == "📈 Visualizations":
                                title=f"Total {value_col} by Region",
                                color='sum',
                                color_continuous_scale='Viridis')
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                     
                     st.dataframe(grouped, width='stretch')
                 else:
@@ -1792,7 +1792,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     hovermode='x unified'
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 # Forecast summary
                 st.subheader("Forecast Summary")
@@ -1819,7 +1819,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        if st.button("Interpret Moving Average Forecast", use_container_width=True, key="interpret_ma"):
+                        if st.button("Interpret Moving Average Forecast", key="interpret_ma"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['ma_forecast'], "Moving Average")
@@ -1834,7 +1834,7 @@ elif page == "🔮 AI-Enhanced Forecasting":
                             st.markdown("</div>", unsafe_allow_html=True)
                     
                     with col2:
-                        if st.button("Interpret Exponential Smoothing Forecast", use_container_width=True, key="interpret_es"):
+                        if st.button("Interpret Exponential Smoothing Forecast", key="interpret_es"):
                             with st.spinner("AI is analyzing the forecast..."):
                                 try:
                                     interpretation = interpret_forecast(fdata['ts_data'][fdata['value_col']], fdata['es_forecast'], "Exponential Smoothing")
@@ -1898,7 +1898,7 @@ elif page == "📊 Statistical Analysis":
                         fig = px.histogram(df, x=col, marginal="box",
                                          title=f"Distribution of {col}",
                                          color_discrete_sequence=['#636EFA'])
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, width='stretch')
             else:
                 st.info("No numeric columns found for statistical analysis.")
         
@@ -1944,7 +1944,7 @@ elif page == "📊 Statistical Analysis":
                     height=500
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 recent_avg = df_sorted[value_col].tail(30).mean()
                 overall_avg = df_sorted[value_col].mean()
@@ -1987,7 +1987,7 @@ elif page == "📊 Statistical Analysis":
                 
                 fig = px.box(df, y=selected_col, title=f"Box Plot with Outliers: {selected_col}",
                            points="outliers")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 if len(outliers) > 0:
                     st.subheader("Outlier Data")
@@ -2020,7 +2020,7 @@ elif page == "📄 AI Report Generator":
             include_charts = st.checkbox("Include Key Metrics", value=True)
         
         with col3:
-            if st.button("🤖 Generate AI Report", type="primary", use_container_width=True):
+            if st.button("🤖 Generate AI Report", type="primary"):
                 with st.spinner("AI is generating your comprehensive report... This may take a minute."):
                     report = generate_automated_report(df)
                     st.session_state.generated_report = report
@@ -2059,8 +2059,7 @@ elif page == "📄 AI Report Generator":
                     label="📥 Download Report (TXT)",
                     data=st.session_state.generated_report,
                     file_name=f"ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                    mime="text/plain",
-                    use_container_width=True
+                    mime="text/plain"
                 )
             
             with col2:
@@ -2085,8 +2084,7 @@ Generated by AI-Powered BI Dashboard
                     label="📥 Download Full Report (TXT)",
                     data=full_report,
                     file_name=f"full_ai_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                    mime="text/plain",
-                    use_container_width=True
+                    mime="text/plain"
                 )
 
 elif page == "📥 Export":
