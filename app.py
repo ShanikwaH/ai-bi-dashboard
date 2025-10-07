@@ -262,9 +262,8 @@ def generate_automated_report(df):
     try:
         from datetime import datetime, timezone
         
-        # Get current timestamps
+        # Get current UTC timestamp
         utc_now = datetime.now(timezone.utc)
-        local_now = datetime.now()
         
         # Format timestamps for AI prompt
         report_date = utc_now.strftime('%B %d, %Y')  # e.g., "October 07, 2025"
@@ -306,9 +305,8 @@ def generate_automated_report(df):
         
         response = st.session_state.gemini_model.generate_content(report_data)
         
-        # Store timestamps in session state for display
+        # Store UTC timestamp in session state for display and downloads
         st.session_state.report_generated_utc = utc_now
-        st.session_state.report_generated_local = local_now
         
         return response.text
     except Exception as e:
@@ -2080,29 +2078,80 @@ elif page == "📄 AI Report Generator":
             st.markdown("---")
             st.markdown("### 📅 Report Timestamp")
             
-            # Get timestamps from session state if available
-            if 'report_generated_local' in st.session_state:
-                local_time = st.session_state.report_generated_local
+            # Get UTC timestamp from session state if available
+            if 'report_generated_utc' in st.session_state:
                 utc_time = st.session_state.report_generated_utc
             else:
-                # Fallback to current time if not in session state
-                local_time = datetime.now()
                 utc_time = datetime.now(timezone.utc)
             
-            # Format the local time for display
-            local_time_str = local_time.strftime('%m/%d/%Y, %I:%M:%S %p')
+            # Use JavaScript to convert UTC to user's local timezone and display
+            utc_iso = utc_time.isoformat()
             
-            # Display the local timestamp
-            st.info(f"**Generated (Your Local Time):** {local_time_str}")
+            html_code = f"""
+            <div style="padding: 12px; background-color: #e8f4f8; border-left: 4px solid #0066cc; border-radius: 4px; margin: 10px 0;">
+                <strong>Generated (Your Local Time):</strong> <span id="localTimestamp" style="font-family: monospace;"></span><br>
+                <strong>Your Timezone:</strong> <span id="userTimezone" style="font-family: monospace; color: #666;"></span>
+                <script>
+                    (function() {{
+                        const utcTime = new Date("{utc_iso}");
+                        
+                        // Automatically detect user's timezone
+                        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                        
+                        // Format options for user's local timezone
+                        const options = {{
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                        }};
+                        
+                        // Format the date in user's timezone
+                        const formatter = new Intl.DateTimeFormat('en-US', options);
+                        const parts = formatter.formatToParts(utcTime);
+                        
+                        // Extract parts
+                        const dateParts = {{}};
+                        parts.forEach(part => {{
+                            dateParts[part.type] = part.value;
+                        }});
+                        
+                        // Format as MM/DD/YYYY, HH:MM:SS AM/PM
+                        const formatted = dateParts.month + '/' + dateParts.day + '/' + dateParts.year + ', ' +
+                                        dateParts.hour + ':' + dateParts.minute + ':' + dateParts.second + ' ' +
+                                        dateParts.dayPeriod;
+                        
+                        // Display the formatted time and timezone
+                        document.getElementById('localTimestamp').textContent = formatted;
+                        document.getElementById('userTimezone').textContent = userTimezone;
+                    }})();
+                </script>
+            </div>
+            """
+            
+            st.markdown(html_code, unsafe_allow_html=True)
+            
+            # Also show UTC time for reference
+            utc_time_str = utc_time.strftime('%Y-%m-%d %H:%M:%S UTC')
+            st.caption(f"🌍 UTC Time: {utc_time_str}")
             
             # Download report
             col1, col2 = st.columns(2)
+            
+            # Get UTC timestamp for downloads
+            if 'report_generated_utc' in st.session_state:
+                utc_time = st.session_state.report_generated_utc
+            else:
+                utc_time = datetime.now(timezone.utc)
             
             with col1:
                 st.download_button(
                     label="📥 Download Report (TXT)",
                     data=st.session_state.generated_report,
-                    file_name=f"ai_report_{local_time.strftime('%Y%m%d_%H%M%S')}.txt",
+                    file_name=f"ai_report_{utc_time.strftime('%Y%m%d_%H%M%S')}_UTC.txt",
                     mime="text/plain"
                 )
             
@@ -2114,6 +2163,8 @@ elif page == "📄 AI Report Generator":
                 full_report = f"""
 AI-POWERED BUSINESS INTELLIGENCE REPORT
 Generated: {utc_time_str}
+Timezone: UTC (Coordinated Universal Time)
+Note: Your local time is displayed in the dashboard based on your browser's timezone
 ========================================
 
 {st.session_state.generated_report}
@@ -2125,12 +2176,14 @@ Total Records: {len(df)}
 Total Columns: {len(df.columns)}
 Date Range: {df.iloc[:, 0].min() if len(df) > 0 else 'N/A'} to {df.iloc[:, 0].max() if len(df) > 0 else 'N/A'}
 
+========================================
 Generated by AI-Powered BI Dashboard
+Report Timestamp (UTC): {utc_time_str}
 """
                 st.download_button(
                     label="📥 Download Full Report (TXT)",
                     data=full_report,
-                    file_name=f"full_ai_report_{local_time.strftime('%Y%m%d_%H%M%S')}.txt",
+                    file_name=f"full_ai_report_{utc_time.strftime('%Y%m%d_%H%M%S')}_UTC.txt",
                     mime="text/plain"
                 )
 
