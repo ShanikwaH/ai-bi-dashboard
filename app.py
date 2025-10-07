@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import io
 import google.generativeai as genai
 import json
@@ -106,35 +106,6 @@ if 'model_name' not in st.session_state:
     st.session_state.model_name = 'gemini-1.5-flash'  # Set default model
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
-
-# Function to get client's local time
-def get_client_time():
-    """Get the client's local time using JavaScript"""
-    js_code = """
-    <script>
-    const now = new Date();
-    const timestamp = now.toISOString();
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const localDatetime = now.toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-    });
-    
-    // Send data to Streamlit
-    window.parent.postMessage({
-        type: 'streamlit:setComponentValue',
-        timestamp: timestamp,
-        timezone: timezone,
-        localDatetime: localDatetime
-    }, '*');
-    </script>
-    """
-    return js_code
 
 # Configure Gemini AI
 def configure_gemini(api_key, model_name='gemini-1.5-flash'):
@@ -284,15 +255,33 @@ Keep the response concise but insightful."""
 
 # Generate automated report
 def generate_automated_report(df):
-    """Generate comprehensive AI report"""
+    """Generate comprehensive AI report with accurate timestamps"""
     if st.session_state.gemini_model is None:
         return "Please configure Gemini API key first."
     
     try:
+        from datetime import datetime, timezone
+        
+        # Get current timestamps
+        utc_now = datetime.now(timezone.utc)
+        local_now = datetime.now()
+        
+        # Format timestamps for AI prompt
+        report_date = utc_now.strftime('%B %d, %Y')  # e.g., "October 07, 2025"
+        utc_timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S UTC')
+        
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         
         report_data = f"""
-        Generate a comprehensive executive business intelligence report for the following dataset:
+        CRITICAL INSTRUCTION: You MUST use the current date provided below in your report. 
+        DO NOT use any other date. DO NOT use "October 26, 2023" or any historical date.
+        
+        CURRENT DATE FOR THIS REPORT: {report_date}
+        CURRENT UTC TIMESTAMP: {utc_timestamp}
+        
+        Generate a comprehensive executive business intelligence report for the following dataset.
+        Start your report with "Executive Business Intelligence Report" followed by a title, 
+        and use the date "{report_date}" shown above.
         
         Dataset Metrics:
         - Total Records: {len(df)}
@@ -312,9 +301,15 @@ def generate_automated_report(df):
         7. Next Steps
         
         Format as a professional business report.
+        REMEMBER: Use the date {report_date} at the start of your report.
         """
         
         response = st.session_state.gemini_model.generate_content(report_data)
+        
+        # Store timestamps in session state for display
+        st.session_state.report_generated_utc = utc_now
+        st.session_state.report_generated_local = local_now
+        
         return response.text
     except Exception as e:
         return f"Error generating report: {str(e)}"
@@ -2054,9 +2049,6 @@ elif page == "📄 AI Report Generator":
                 with st.spinner("AI is generating your comprehensive report... This may take a minute."):
                     report = generate_automated_report(df)
                     st.session_state.generated_report = report
-                    # Store the current time when report is generated
-                    st.session_state.report_timestamp = datetime.now()
-                    st.session_state.report_timestamp_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         if 'generated_report' in st.session_state:
             st.markdown("---")
@@ -2084,57 +2076,44 @@ elif page == "📄 AI Report Generator":
                                 delta=f"{df[col_name].std():.2f} σ"
                             )
             
-            # Get client's local time for display
+            # Display timestamp
             st.markdown("---")
-            st.markdown("#### 📅 Report Timestamp")
+            st.markdown("### 📅 Report Timestamp")
             
-            # Use HTML/JavaScript to display local time
-            local_time_html = f"""
-            <div style="padding: 10px; background-color: #f0f2f6; border-radius: 5px; margin-bottom: 10px;">
-                <strong>Generated (Your Local Time):</strong> <span id="localTime"></span>
-                <script>
-                    // Get the server timestamp from session state
-                    const serverTime = new Date("{st.session_state.report_timestamp.isoformat()}");
-                    
-                    // Format in user's local timezone
-                    const options = {{
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false
-                    }};
-                    
-                    const localTimeStr = serverTime.toLocaleString('en-US', options);
-                    document.getElementById('localTime').textContent = localTimeStr;
-                </script>
-            </div>
-            """
-            st.markdown(local_time_html, unsafe_allow_html=True)
+            # Get timestamps from session state if available
+            if 'report_generated_local' in st.session_state:
+                local_time = st.session_state.report_generated_local
+                utc_time = st.session_state.report_generated_utc
+            else:
+                # Fallback to current time if not in session state
+                local_time = datetime.now()
+                utc_time = datetime.now(timezone.utc)
+            
+            # Format the local time for display
+            local_time_str = local_time.strftime('%m/%d/%Y, %I:%M:%S %p')
+            
+            # Display the local timestamp
+            st.info(f"**Generated (Your Local Time):** {local_time_str}")
             
             # Download report
             col1, col2 = st.columns(2)
-            
-            # Get timestamp from session state
-            report_time = st.session_state.get('report_timestamp', datetime.now())
             
             with col1:
                 st.download_button(
                     label="📥 Download Report (TXT)",
                     data=st.session_state.generated_report,
-                    file_name=f"ai_report_{report_time.strftime('%Y%m%d_%H%M%S')}.txt",
+                    file_name=f"ai_report_{local_time.strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain"
                 )
             
             with col2:
+                # Format UTC time for the download
+                utc_time_str = utc_time.strftime('%Y-%m-%d %H:%M:%S UTC')
+                
                 # Create formatted report with metrics
-                # Note: Downloads will use server time in filename, but include timezone info in content
                 full_report = f"""
 AI-POWERED BUSINESS INTELLIGENCE REPORT
-Generated: {report_time.strftime('%Y-%m-%d %H:%M:%S')} UTC
-Note: View timestamp in your local timezone in the dashboard
+Generated: {utc_time_str}
 ========================================
 
 {st.session_state.generated_report}
@@ -2147,12 +2126,11 @@ Total Columns: {len(df.columns)}
 Date Range: {df.iloc[:, 0].min() if len(df) > 0 else 'N/A'} to {df.iloc[:, 0].max() if len(df) > 0 else 'N/A'}
 
 Generated by AI-Powered BI Dashboard
-Report Generation Time (UTC): {report_time.strftime('%Y-%m-%d %H:%M:%S')}
 """
                 st.download_button(
                     label="📥 Download Full Report (TXT)",
                     data=full_report,
-                    file_name=f"full_ai_report_{report_time.strftime('%Y%m%d_%H%M%S')}.txt",
+                    file_name=f"full_ai_report_{local_time.strftime('%Y%m%d_%H%M%S')}.txt",
                     mime="text/plain"
                 )
 
