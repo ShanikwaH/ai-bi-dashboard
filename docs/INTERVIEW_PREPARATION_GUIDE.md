@@ -1,3 +1,5 @@
+[Non-Technical Version](#-non-technical version) | [Technical Version](#-technical version) 
+
 # 📊 Interview Preparation Guide - Non-Technical Version
 ## AI-Powered Business Intelligence Dashboard
 
