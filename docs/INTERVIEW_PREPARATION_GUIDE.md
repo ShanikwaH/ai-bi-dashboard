@@ -1,4 +1,4 @@
-[📊 Non-Technical Version](#-interview-preparation-guide---non-technical-version) | [🖥️ Technical Version](#-interview-preparation-guide---technical-version)
+[📊 Non-Technical Version](#-interview-preparation-guide---non-technical-version) | [🖥️ Technical Version](#interview-preparation-guide---technical-version)
 
 ---
 
