@@ -615,8 +615,7 @@ After building this project, you can honestly claim:
 *Last Updated: October 2025*  
 *For more information: nikki.19972010@hotmail.com*
 
-
-
+---
 
 # 🖥️ Interview Preparation Guide - Technical Version
 ## AI-Powered Business Intelligence Dashboard
@@ -627,7 +626,7 @@ After building this project, you can honestly claim:
 > **Tech Stack:** Python, Streamlit, Google Gemini API, Pandas, Plotly  
 > **Last Updated:** October 2025
 
----
+[🖥️ Technical Version](#%EF%B8%8F-interview-preparation-guide---technical-version)
 
 ## 🎯 Portfolio Positioning
 
