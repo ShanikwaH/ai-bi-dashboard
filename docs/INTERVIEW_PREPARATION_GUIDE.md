@@ -627,7 +627,7 @@ After building this project, you can honestly claim:
 > **Tech Stack:** Python, Streamlit, Google Gemini API, Pandas, Plotly  
 > **Last Updated:** October 2025
 
-[🖥️ Technical Version](#%EF%B8%8F-interview-preparation-guide---technical-version)
+---
 
 ## 🎯 Portfolio Positioning
 
