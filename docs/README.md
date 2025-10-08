@@ -230,7 +230,7 @@ Date,Revenue,Units_Sold,Region,Category
 
 **Option B: Generate Sample Data**
 - Choose industry template
-- Select number of rows (100-50,000)
+- Select number of rows (1,000-25,000)
 - Click "Generate" button
 - Data appears with preview
 
