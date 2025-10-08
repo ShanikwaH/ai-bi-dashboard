@@ -1,4 +1,4 @@
-[Non-Technical Version](#-non-technical version) | [Technical Version](#-technical version) 
+[Non-Technical Version](#-non-technicalversion) | [Technical Version](#-technicalversion) 
 
 # 📊 Interview Preparation Guide - Non-Technical Version
 ## AI-Powered Business Intelligence Dashboard
