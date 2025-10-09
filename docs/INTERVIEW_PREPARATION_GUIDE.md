@@ -561,11 +561,11 @@ After building this project, you can honestly claim:
 ## 🔗 Resources to Share
 
 ### **Portfolio Links:**
-- 🌐 **Live Demo:** https://ai-bi-dashboard-yajxi5tkqxsrpguy7yh8zu.streamlit.app
-- 💻 **GitHub Repo:** https://github.com/ShanikwaH/ai-bi-dashboard
-- 📧 **Email:** nikki.19972010@hotmail.com
-- 💼 **LinkedIn:** linkedin.com/in/shanikwahaynes
-- 🌟 **Portfolio:** analyticsbyshanikwa.com
+- 🌐 **Live Demo:** 
+- 💻 **GitHub Repo:** 
+- 📧 **Email:** 
+- 💼 **LinkedIn:** 
+- 🌟 **Portfolio:** 
 
 ### **Sample Materials to Prepare:**
 - 📄 One-page case study (PDF)
