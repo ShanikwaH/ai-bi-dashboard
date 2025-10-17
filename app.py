@@ -11,6 +11,9 @@ import os
 import sys
 import traceback
 from streamlit.components.v1 import html
+import duckdb
+from plotly.subplots import make_subplots
+from io import BytesIO, StringIO
 
 # Optional: Load environment variables if dotenv is available
 try:
@@ -123,6 +126,14 @@ if 'model_name' not in st.session_state:
     st.session_state.model_name = 'gemini-2.5-flash'  # Set default model
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
+if 'con' not in st.session_state:
+    st.session_state.con = duckdb.connect(':memory:')
+if 'query_history' not in st.session_state:
+    st.session_state.query_history = []
+if 'original_df' not in st.session_state:
+    st.session_state.original_df = None
+if 'cleaned_df' not in st.session_state:
+    st.session_state.cleaned_df = None    
 
 # Configure Gemini AI
 def configure_gemini(api_key, model_name='gemini-2.5-flash'):
@@ -383,6 +394,189 @@ def generate_automated_report(df, report_type="comprehensive"):
     except Exception as e:
         return f"Error generating report: {str(e)}"
 
+# Advanced SQL Templates for SQL CSV Cleaner
+ADVANCED_SQL_TEMPLATES = {
+    "Custom Query": {
+        "sql": "",
+        "description": "Write your own SQL query"
+    },
+    "Remove Duplicates": {
+        "sql": "SELECT DISTINCT * FROM uploaded_data",
+        "description": "Remove all duplicate rows"
+    },
+    "Remove Duplicates (Keep First)": {
+        "sql": """SELECT * FROM (
+    SELECT *, ROW_NUMBER() OVER (PARTITION BY {columns} ORDER BY {order_col}) as rn
+    FROM uploaded_data
+) WHERE rn = 1""",
+        "description": "Remove duplicates but keep the first occurrence",
+        "requires_columns": True
+    },
+    "Remove Null Rows (Any Column)": {
+        "sql": "SELECT * FROM uploaded_data WHERE {null_check}",
+        "description": "Remove rows where any column has NULL values",
+        "dynamic": True
+    },
+    "Remove Null Rows (Specific Columns)": {
+        "sql": "SELECT * FROM uploaded_data WHERE {columns_not_null}",
+        "description": "Remove rows where specific columns have NULL",
+        "requires_columns": True
+    },
+    "Trim All Text Columns": {
+        "sql": "SELECT {trimmed_columns} FROM uploaded_data",
+        "description": "Remove leading/trailing whitespace from all text columns",
+        "dynamic": True
+    },
+    "Standardize Text (Uppercase)": {
+        "sql": "SELECT {upper_columns} FROM uploaded_data",
+        "description": "Convert all text columns to uppercase",
+        "dynamic": True
+    },
+    "Standardize Text (Lowercase)": {
+        "sql": "SELECT {lower_columns} FROM uploaded_data",
+        "description": "Convert all text columns to lowercase",
+        "dynamic": True
+    },
+    "Remove Empty Strings": {
+        "sql": "SELECT * FROM uploaded_data WHERE {empty_check}",
+        "description": "Remove rows with empty string values",
+        "dynamic": True
+    },
+    "Fill Null with Default": {
+        "sql": "SELECT {filled_columns} FROM uploaded_data",
+        "description": "Replace NULL values with defaults (0 for numbers, 'Unknown' for text)",
+        "dynamic": True
+    },
+    "Remove Outliers (IQR Method)": {
+        "sql": """WITH stats AS (
+    SELECT 
+        PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY {column}) as q1,
+        PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY {column}) as q3
+    FROM uploaded_data
+),
+bounds AS (
+    SELECT 
+        q1 - 1.5 * (q3 - q1) as lower_bound,
+        q3 + 1.5 * (q3 - q1) as upper_bound
+    FROM stats
+)
+SELECT * FROM uploaded_data, bounds
+WHERE {column} BETWEEN lower_bound AND upper_bound""",
+        "description": "Remove statistical outliers using IQR method",
+        "requires_columns": True
+    },
+}
+
+def generate_dynamic_sql(template, df, **kwargs):
+    """Generate SQL queries dynamically based on data structure"""
+    sql = template['sql']
+    
+    if template.get('dynamic'):
+        if 'null_check' in sql:
+            # Generate null check for all columns
+            null_checks = [f"{col} IS NOT NULL" for col in df.columns]
+            sql = sql.replace('{null_check}', ' AND '.join(null_checks))
+        
+        if 'trimmed_columns' in sql:
+            # Generate trimmed columns
+            text_cols = df.select_dtypes(include=['object']).columns
+            trimmed = [f"TRIM({col}) as {col}" for col in text_cols]
+            other_cols = [col for col in df.columns if col not in text_cols]
+            all_cols = trimmed + other_cols
+            sql = sql.replace('{trimmed_columns}', ', '.join(all_cols))
+        
+        if 'upper_columns' in sql:
+            text_cols = df.select_dtypes(include=['object']).columns
+            upper = [f"UPPER({col}) as {col}" for col in text_cols]
+            other_cols = [col for col in df.columns if col not in text_cols]
+            all_cols = upper + other_cols
+            sql = sql.replace('{upper_columns}', ', '.join(all_cols))
+        
+        if 'lower_columns' in sql:
+            text_cols = df.select_dtypes(include=['object']).columns
+            lower = [f"LOWER({col}) as {col}" for col in text_cols]
+            other_cols = [col for col in df.columns if col not in text_cols]
+            all_cols = lower + other_cols
+            sql = sql.replace('{lower_columns}', ', '.join(all_cols))
+        
+        if 'empty_check' in sql:
+            text_cols = df.select_dtypes(include=['object']).columns
+            empty_checks = [f"{col} != ''" for col in text_cols]
+            sql = sql.replace('{empty_check}', ' AND '.join(empty_checks) if empty_checks else 'TRUE')
+        
+        if 'filled_columns' in sql:
+            filled = []
+            for col in df.columns:
+                if df[col].dtype in [np.number, 'int64', 'float64']:
+                    filled.append(f"COALESCE({col}, 0) as {col}")
+                else:
+                    filled.append(f"COALESCE({col}, 'Unknown') as {col}")
+            sql = sql.replace('{filled_columns}', ', '.join(filled))
+    
+    # Handle requires_columns templates
+    if template.get('requires_columns'):
+        for key, value in kwargs.items():
+            sql = sql.replace('{' + key + '}', str(value))
+    
+    return sql
+
+def create_visualizations(original_df, cleaned_df=None):
+    """Create visualizations for data quality analysis"""
+    st.subheader("📊 Data Visualizations")
+    
+    # Missing data visualization
+    st.markdown("#### Missing Data Analysis")
+    missing_data = original_df.isnull().sum()
+    if missing_data.sum() > 0:
+        fig = px.bar(
+            x=missing_data.index,
+            y=missing_data.values,
+            labels={'x': 'Columns', 'y': 'Missing Values'},
+            title='Missing Values by Column'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("✅ No missing values detected!")
+    
+    # Data type distribution
+    st.markdown("#### Data Type Distribution")
+    dtype_counts = original_df.dtypes.value_counts()
+    fig = px.pie(
+        values=dtype_counts.values,
+        names=dtype_counts.index.astype(str),
+        title='Distribution of Data Types'
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Numeric columns distribution
+    numeric_cols = original_df.select_dtypes(include=[np.number]).columns
+    if len(numeric_cols) > 0:
+        st.markdown("#### Numeric Columns Distribution")
+        selected_col = st.selectbox("Select numeric column", numeric_cols)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            fig = px.histogram(original_df, x=selected_col, title=f'Distribution of {selected_col}')
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            fig = px.box(original_df, y=selected_col, title=f'Box Plot of {selected_col}')
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # Comparison if cleaned data exists
+    if cleaned_df is not None:
+        st.markdown("#### Before vs After Comparison")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("Original Rows", len(original_df))
+            st.metric("Original Nulls", original_df.isnull().sum().sum())
+        
+        with col2:
+            st.metric("Cleaned Rows", len(cleaned_df), delta=len(cleaned_df) - len(original_df))
+            st.metric("Cleaned Nulls", cleaned_df.isnull().sum().sum(), 
+                     delta=cleaned_df.isnull().sum().sum() - original_df.isnull().sum().sum())
+                     
 # Helper Functions
 def generate_sample_data():
     """Generate sample sales data for demonstration"""
@@ -1072,7 +1266,7 @@ with st.sidebar:
         "Select Module",
         ["🏠 Home", "📁 Data Upload", "🤖 AI Insights", "💬 AI Chat Assistant",
          "🔍 Exploratory Analysis", "📈 Visualizations", "🔮 AI-Enhanced Forecasting", 
-         "📊 Statistical Analysis", "📄 AI Report Generator", "📥 Export"]
+         "📊 Statistical Analysis", "📄 AI Report Generator", "📥 Export", "🧹 SQL Cleaner"]
     )
     
     st.markdown("---")
