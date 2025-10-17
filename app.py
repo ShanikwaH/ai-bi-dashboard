@@ -2544,6 +2544,310 @@ elif page == "📥 Export":
         st.subheader("Data Preview")
         st.dataframe(df.head(10), use_container_width=True)
 
+elif page == "🧹 SQL Cleaner":
+    st.header("🧹 Advanced SQL CSV Cleaner")
+    st.markdown("Clean and transform your CSV data using powerful SQL queries with DuckDB")
+    
+    # Sidebar for SQL Cleaner
+    with st.sidebar:
+        st.markdown("---")
+        st.subheader("🧹 SQL Cleaner Upload")
+        uploaded_file_cleaner = st.file_uploader("Upload CSV for cleaning", type=['csv'], key="cleaner_upload")
+    
+    if uploaded_file_cleaner is not None:
+        try:
+            # Load data
+            df = pd.read_csv(uploaded_file_cleaner)
+            st.session_state.original_df = df
+            
+            # Register with DuckDB
+            st.session_state.con.register('uploaded_data', df)
+            
+            # Success message
+            st.success(f"✅ Successfully loaded {len(df):,} rows and {len(df.columns)} columns")
+            
+            # Create tabs
+            tab1, tab2, tab3 = st.tabs(["🔧 SQL Editor", "📊 Visualizations", "📋 Data Preview"])
+            
+            with tab1:
+                # SQL Template selector
+                st.subheader("📝 SQL Templates")
+                
+                template_name = st.selectbox(
+                    "Choose a cleaning template:",
+                    list(ADVANCED_SQL_TEMPLATES.keys())
+                )
+                
+                template = ADVANCED_SQL_TEMPLATES[template_name]
+                st.info(f"ℹ️ {template['description']}")
+                
+                # Handle templates that require column selection
+                sql_query = template['sql']
+                
+                if template.get('requires_columns'):
+                    st.markdown("#### Column Selection")
+                    
+                    if 'Remove Duplicates (Keep First)' in template_name:
+                        dup_cols = st.multiselect("Select columns to check for duplicates:", df.columns.tolist())
+                        order_col = st.selectbox("Order by column:", df.columns.tolist())
+                        if dup_cols and order_col:
+                            sql_query = sql_query.replace('{columns}', ', '.join(dup_cols))
+                            sql_query = sql_query.replace('{order_col}', order_col)
+                    
+                    elif 'Null Rows (Specific' in template_name:
+                        null_cols = st.multiselect("Select columns to check for nulls:", df.columns.tolist())
+                        if null_cols:
+                            null_checks = [f"{col} IS NOT NULL" for col in null_cols]
+                            sql_query = sql_query.replace('{columns_not_null}', ' AND '.join(null_checks))
+                    
+                    elif 'Outliers' in template_name:
+                        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+                        if numeric_cols:
+                            outlier_col = st.selectbox("Select numeric column for outlier detection:", numeric_cols)
+                            sql_query = sql_query.replace('{column}', outlier_col)
+                
+                elif template.get('dynamic'):
+                    sql_query = generate_dynamic_sql(template, df)
+                
+                # SQL Editor
+                st.subheader("✏️ SQL Query Editor")
+                sql_query = st.text_area(
+                    "Edit your SQL query:",
+                    value=sql_query,
+                    height=200,
+                    help="Table name is 'uploaded_data'"
+                )
+                
+                # Execute button
+                col1, col2, col3 = st.columns([1, 1, 2])
+                
+                with col1:
+                    execute_btn = st.button("▶️ Execute Query", type="primary", use_container_width=True)
+                
+                with col2:
+                    if st.button("📜 Query History", use_container_width=True):
+                        if st.session_state.query_history:
+                            with st.expander("Previous Queries", expanded=True):
+                                for i, query in enumerate(reversed(st.session_state.query_history[-5:])):
+                                    st.code(query, language='sql')
+                
+                # Execute query
+                if execute_btn and sql_query.strip():
+                    try:
+                        # Execute the query
+                        result = st.session_state.con.execute(sql_query).fetchdf()
+                        st.session_state.cleaned_df = result
+                        
+                        # Add to history
+                        if sql_query not in st.session_state.query_history:
+                            st.session_state.query_history.append(sql_query)
+                        
+                        # Show results
+                        st.success(f"✅ Query executed successfully! Result: {len(result):,} rows")
+                        
+                        # Before/After comparison
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Original Rows", f"{len(df):,}")
+                        with col2:
+                            st.metric("Cleaned Rows", f"{len(result):,}", delta=f"{len(result) - len(df):,}")
+                        with col3:
+                            pct_change = ((len(result) - len(df)) / len(df) * 100) if len(df) > 0 else 0
+                            st.metric("Change", f"{pct_change:.1f}%")
+                        
+                        # Display result
+                        st.subheader("🎯 Cleaned Data")
+                        st.dataframe(result, use_container_width=True, height=400)
+                        
+                        # Download options
+                        st.markdown("---")
+                        st.subheader("💾 Download Cleaned Data")
+                        
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            csv = result.to_csv(index=False)
+                            st.download_button(
+                                "📥 CSV",
+                                data=csv,
+                                file_name=f"cleaned_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                mime="text/csv",
+                                use_container_width=True
+                            )
+                        
+                        with col2:
+                            buffer = BytesIO()
+                            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                                result.to_excel(writer, index=False, sheet_name='Cleaned Data')
+                                df.to_excel(writer, index=False, sheet_name='Original Data')
+                            
+                            st.download_button(
+                                "📥 Excel",
+                                data=buffer.getvalue(),
+                                file_name=f"cleaned_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                use_container_width=True
+                            )
+                        
+                        with col3:
+                            st.download_button(
+                                "📥 SQL",
+                                data=sql_query,
+                                file_name="cleaning_query.sql",
+                                mime="text/plain",
+                                use_container_width=True
+                            )
+                        
+                        with col4:
+                            json_data = result.to_json(orient='records', indent=2)
+                            st.download_button(
+                                "📥 JSON",
+                                data=json_data,
+                                file_name=f"cleaned_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                                mime="application/json",
+                                use_container_width=True
+                            )
+                        
+                    except Exception as e:
+                        st.error(f"❌ Error executing query: {str(e)}")
+                        st.info("💡 Tip: Check your SQL syntax and ensure table name is 'uploaded_data'")
+            
+            with tab2:
+                # Visualizations
+                if st.session_state.cleaned_df is not None:
+                    create_visualizations(st.session_state.original_df, st.session_state.cleaned_df)
+                else:
+                    create_visualizations(st.session_state.original_df)
+            
+            with tab3:
+                # Data preview tabs
+                preview_tab1, preview_tab2, preview_tab3 = st.tabs(["Original Data", "Column Details", "Data Profile"])
+                
+                with preview_tab1:
+                    st.dataframe(df, use_container_width=True)
+                
+                with preview_tab2:
+                    # Column information
+                    col_info = pd.DataFrame({
+                        'Column': df.columns,
+                        'Type': df.dtypes.astype(str),
+                        'Non-Null': df.count().values,
+                        'Null Count': df.isnull().sum().values,
+                        'Null %': (df.isnull().sum() / len(df) * 100).round(2).values,
+                        'Unique': [df[col].nunique() for col in df.columns],
+                        'Sample Values': [str(df[col].dropna().head(3).tolist()[:3]) for col in df.columns]
+                    })
+                    st.dataframe(col_info, use_container_width=True, hide_index=True)
+                
+                with preview_tab3:
+                    # Data profiling
+                    st.markdown("#### Data Profile Summary")
+                    
+                    profile_data = {
+                        'Characteristic': [
+                            'Total Records',
+                            'Total Features',
+                            'Numeric Features',
+                            'Categorical Features',
+                            'Boolean Features',
+                            'DateTime Features',
+                            'Missing Cells',
+                            'Missing Cells %',
+                            'Duplicate Rows',
+                            'Duplicate Rows %',
+                            'Total Memory'
+                        ],
+                        'Value': [
+                            f"{len(df):,}",
+                            len(df.columns),
+                            len(df.select_dtypes(include=[np.number]).columns),
+                            len(df.select_dtypes(include=['object']).columns),
+                            len(df.select_dtypes(include=['bool']).columns),
+                            len(df.select_dtypes(include=['datetime64']).columns),
+                            f"{df.isnull().sum().sum():,}",
+                            f"{(df.isnull().sum().sum() / (len(df) * len(df.columns)) * 100):.2f}%",
+                            f"{df.duplicated().sum():,}",
+                            f"{(df.duplicated().sum() / len(df) * 100):.2f}%",
+                            f"{df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
+                        ]
+                    }
+                    
+                    st.dataframe(pd.DataFrame(profile_data), use_container_width=True, hide_index=True)
+        
+        except Exception as e:
+            st.error(f"❌ Error loading file: {str(e)}")
+            st.info("💡 Make sure your file is a valid CSV format")
+    
+    else:
+        # Welcome screen for SQL Cleaner
+        st.info("👆 Upload a CSV file from the sidebar under 'SQL Cleaner Upload' to get started!")
+        
+        # Feature showcase
+        st.subheader("🌟 SQL Cleaner Features")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("""
+            #### 🔧 Data Cleaning
+            - 10+ SQL templates
+            - Custom query editor
+            - Duplicate removal
+            - Null value handling
+            - Text standardization
+            - Outlier detection
+            """)
+        
+        with col2:
+            st.markdown("""
+            #### 📊 Visualizations
+            - Missing data analysis
+            - Distribution plots
+            - Statistical summaries
+            - Before/after comparison
+            - Data type analysis
+            - Interactive charts
+            """)
+        
+        with col3:
+            st.markdown("""
+            #### 💾 Export Options
+            - CSV download
+            - Excel with multiple sheets
+            - JSON export
+            - SQL query export
+            - Query history
+            - Data profiling report
+            """)
+        
+        # SQL cheat sheet
+        with st.expander("📚 SQL Cleaning Quick Reference"):
+            st.markdown("""
+            ### Common SQL Operations
+            
+            **Remove Duplicates:**
+            ```sql
+            SELECT DISTINCT * FROM uploaded_data
+            ```
+            
+            **Remove Nulls:**
+            ```sql
+            SELECT * FROM uploaded_data 
+            WHERE column1 IS NOT NULL AND column2 IS NOT NULL
+            ```
+            
+            **Trim Whitespace:**
+            ```sql
+            SELECT TRIM(column_name) AS column_name FROM uploaded_data
+            ```
+            
+            **Standardize Text:**
+            ```sql
+            SELECT UPPER(TRIM(column_name)) AS column_name 
+            FROM uploaded_data
+            ```
+            """)
+            
 # Footer
 st.markdown("---")
 st.markdown(
