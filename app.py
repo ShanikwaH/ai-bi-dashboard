@@ -11,9 +11,6 @@ import os
 import sys
 import traceback
 from streamlit.components.v1 import html
-from sql_csv_cleaner import SQLCSVCleaner
-from pathlib import Path
-import tempfile
 
 # Optional: Load environment variables if dotenv is available
 try:
@@ -1027,29 +1024,6 @@ def clear_unused_sample_data(keep_key=None):
         if key != keep_key and key in st.session_state:
             st.session_state[key] = None
 
-def clean_csv_with_sql(df):
-    """Clean DataFrame using SQL CSV Cleaner"""
-    try:
-        # Create temporary CSV file
-        with tempfile.NamedTemporaryFile(suffix='.csv', delete=False, mode='w') as tmp:
-            df.to_csv(tmp.name, index=False)
-            tmp_path = tmp.name
-            
-        # Initialize cleaner
-        cleaner = SQLCSVCleaner(Path(tmp_path))
-        
-        # Clean data
-        cleaned_df = cleaner.clean_data()
-        
-        # Remove temp file
-        Path(tmp_path).unlink()
-        
-        return cleaned_df, cleaner.get_cleaning_report()
-        
-    except Exception as e:
-        st.error(f"Error cleaning data: {str(e)}")
-        return df, None
-
 # Sidebar
 with st.sidebar:
     st.markdown("### 🤖 AI BI Dashboard")
@@ -1474,44 +1448,6 @@ elif page == "📁 Data Upload":
         st.info("🌐 **Cloud Note:** For Streamlit Community Cloud, datasets ≤25,000 rows recommended to avoid memory issues.")
 
 
-# Add in the "Upload Data" tab after loading the data but before AI insights
-if uploaded_file is not None:
-    # ...existing data loading code...
-    
-    st.markdown("---")
-    st.subheader("🧹 Data Cleaning")
-    
-    if st.button("Clean Data with SQL", type="primary", help="Apply SQL-based data cleaning"):
-        with st.spinner("Cleaning data..."):
-            cleaned_df, cleaning_report = clean_csv_with_sql(df)
-            
-            if cleaning_report:
-                st.success("✅ Data cleaned successfully!")
-                
-                # Display cleaning report
-                st.markdown("### Cleaning Report")
-                st.json(cleaning_report)
-                
-                # Show changes
-                st.markdown("### Changes Preview")
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown("**Original Data**")
-                    st.dataframe(df.head(5), use_container_width=True)
-                
-                with col2:
-                    st.markdown("**Cleaned Data**")
-                    st.dataframe(cleaned_df.head(5), use_container_width=True)
-                
-                # Option to use cleaned data
-                if st.button("Use Cleaned Data"):
-                    st.session_state.df = cleaned_df
-                    st.success("✅ Now using cleaned dataset!")
-                    st.rerun()
-    
-    st.markdown("---")
-    
 elif page == "🤖 AI Insights":
     st.header("🤖 AI-Powered Data Insights")
     
