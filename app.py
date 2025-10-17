@@ -133,7 +133,7 @@ if 'query_history' not in st.session_state:
 if 'original_df' not in st.session_state:
     st.session_state.original_df = None
 if 'cleaned_df' not in st.session_state:
-    st.session_state.cleaned_df = None    
+    st.session_state.cleaned_df = None 
 
 # Configure Gemini AI
 def configure_gemini(api_key, model_name='gemini-2.5-flash'):
@@ -447,6 +447,11 @@ ADVANCED_SQL_TEMPLATES = {
         "description": "Replace NULL values with defaults (0 for numbers, 'Unknown' for text)",
         "dynamic": True
     },
+    "Fill Null with Mean (Numeric)": {
+        "sql": """SELECT {filled_mean_columns} FROM uploaded_data""",
+        "description": "Replace NULL numeric values with column mean",
+        "dynamic": True
+    },
     "Remove Outliers (IQR Method)": {
         "sql": """WITH stats AS (
     SELECT 
@@ -465,119 +470,251 @@ WHERE {column} BETWEEN lower_bound AND upper_bound""",
         "description": "Remove statistical outliers using IQR method",
         "requires_columns": True
     },
+    "Remove Outliers (Z-Score)": {
+        "sql": """WITH stats AS (
+    SELECT 
+        AVG({column}) as mean,
+        STDDEV({column}) as std
+    FROM uploaded_data
+)
+SELECT * FROM uploaded_data, stats
+WHERE ABS(({column} - mean) / std) <= 3""",
+        "description": "Remove outliers beyond 3 standard deviations",
+        "requires_columns": True
+    },
+    "Email Validation": {
+        "sql": """SELECT * FROM uploaded_data 
+WHERE regexp_matches({email_column}, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$')""",
+        "description": "Keep only valid email addresses",
+        "requires_columns": True
+    },
+    "Phone Number Standardization": {
+        "sql": """SELECT 
+    regexp_replace({phone_column}, '[^0-9]', '', 'g') as standardized_phone,
+    * EXCLUDE ({phone_column})
+FROM uploaded_data""",
+        "description": "Standardize phone numbers (remove non-digits)",
+        "requires_columns": True
+    },
+    "Complete Data Cleaning Pipeline": {
+        "sql": """WITH cleaned AS (
+    SELECT DISTINCT * FROM uploaded_data
+    WHERE {null_check}
+),
+trimmed AS (
+    SELECT {trimmed_columns} FROM cleaned
+),
+final AS (
+    SELECT * FROM trimmed WHERE {empty_check}
+)
+SELECT * FROM final""",
+        "description": "Full pipeline: remove duplicates, nulls, trim, and remove empties",
+        "dynamic": True
+    }
 }
-
-def generate_dynamic_sql(template, df, **kwargs):
-    """Generate SQL queries dynamically based on data structure"""
-    sql = template['sql']
+                     
+# Helper Functions
+def generate_dynamic_sql(template_name, df):
+    """Generate SQL with column-specific logic"""
+    template = ADVANCED_SQL_TEMPLATES[template_name]
+    sql = template["sql"]
     
-    if template.get('dynamic'):
-        if 'null_check' in sql:
-            # Generate null check for all columns
-            null_checks = [f"{col} IS NOT NULL" for col in df.columns]
-            sql = sql.replace('{null_check}', ' AND '.join(null_checks))
-        
-        if 'trimmed_columns' in sql:
-            # Generate trimmed columns
-            text_cols = df.select_dtypes(include=['object']).columns
-            trimmed = [f"TRIM({col}) as {col}" for col in text_cols]
-            other_cols = [col for col in df.columns if col not in text_cols]
-            all_cols = trimmed + other_cols
-            sql = sql.replace('{trimmed_columns}', ', '.join(all_cols))
-        
-        if 'upper_columns' in sql:
-            text_cols = df.select_dtypes(include=['object']).columns
-            upper = [f"UPPER({col}) as {col}" for col in text_cols]
-            other_cols = [col for col in df.columns if col not in text_cols]
-            all_cols = upper + other_cols
-            sql = sql.replace('{upper_columns}', ', '.join(all_cols))
-        
-        if 'lower_columns' in sql:
-            text_cols = df.select_dtypes(include=['object']).columns
-            lower = [f"LOWER({col}) as {col}" for col in text_cols]
-            other_cols = [col for col in df.columns if col not in text_cols]
-            all_cols = lower + other_cols
-            sql = sql.replace('{lower_columns}', ', '.join(all_cols))
-        
-        if 'empty_check' in sql:
-            text_cols = df.select_dtypes(include=['object']).columns
-            empty_checks = [f"{col} != ''" for col in text_cols]
-            sql = sql.replace('{empty_check}', ' AND '.join(empty_checks) if empty_checks else 'TRUE')
-        
-        if 'filled_columns' in sql:
-            filled = []
-            for col in df.columns:
-                if df[col].dtype in [np.number, 'int64', 'float64']:
-                    filled.append(f"COALESCE({col}, 0) as {col}")
-                else:
-                    filled.append(f"COALESCE({col}, 'Unknown') as {col}")
-            sql = sql.replace('{filled_columns}', ', '.join(filled))
+    if not template.get("dynamic"):
+        return sql
     
-    # Handle requires_columns templates
-    if template.get('requires_columns'):
-        for key, value in kwargs.items():
-            sql = sql.replace('{' + key + '}', str(value))
+    text_cols = df.select_dtypes(include=['object']).columns.tolist()
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    all_cols = df.columns.tolist()
+    
+    # Generate trimmed columns
+    if "{trimmed_columns}" in sql:
+        trimmed = [f"TRIM({col}) AS {col}" if col in text_cols else col for col in all_cols]
+        sql = sql.replace("{trimmed_columns}", ", ".join(trimmed))
+    
+    # Generate uppercase columns
+    if "{upper_columns}" in sql:
+        upper = [f"UPPER(TRIM({col})) AS {col}" if col in text_cols else col for col in all_cols]
+        sql = sql.replace("{upper_columns}", ", ".join(upper))
+    
+    # Generate lowercase columns
+    if "{lower_columns}" in sql:
+        lower = [f"LOWER(TRIM({col})) AS {col}" if col in text_cols else col for col in all_cols]
+        sql = sql.replace("{lower_columns}", ", ".join(lower))
+    
+    # Generate null check
+    if "{null_check}" in sql:
+        null_checks = [f"{col} IS NOT NULL" for col in all_cols]
+        sql = sql.replace("{null_check}", " AND ".join(null_checks))
+    
+    # Generate empty string check
+    if "{empty_check}" in sql:
+        empty_checks = [f"{col} != ''" for col in text_cols]
+        if empty_checks:
+            sql = sql.replace("{empty_check}", " AND ".join(empty_checks))
+        else:
+            sql = sql.replace("WHERE {empty_check}", "")
+    
+    # Generate filled columns (default values)
+    if "{filled_columns}" in sql:
+        filled = []
+        for col in all_cols:
+            if col in numeric_cols:
+                filled.append(f"COALESCE({col}, 0) AS {col}")
+            elif col in text_cols:
+                filled.append(f"COALESCE({col}, 'Unknown') AS {col}")
+            else:
+                filled.append(col)
+        sql = sql.replace("{filled_columns}", ", ".join(filled))
+    
+    # Generate filled columns (mean)
+    if "{filled_mean_columns}" in sql:
+        filled_mean = []
+        for col in all_cols:
+            if col in numeric_cols:
+                filled_mean.append(f"COALESCE({col}, (SELECT AVG({col}) FROM uploaded_data)) AS {col}")
+            else:
+                filled_mean.append(col)
+        sql = sql.replace("{filled_mean_columns}", ", ".join(filled_mean))
     
     return sql
 
-def create_visualizations(original_df, cleaned_df=None):
-    """Create visualizations for data quality analysis"""
-    st.subheader("📊 Data Visualizations")
+def create_sql_cleaner_visualizations(original_df, cleaned_df=None):
+    """Create before/after visualizations for SQL Cleaner"""
     
-    # Missing data visualization
-    st.markdown("#### Missing Data Analysis")
-    missing_data = original_df.isnull().sum()
-    if missing_data.sum() > 0:
-        fig = px.bar(
-            x=missing_data.index,
-            y=missing_data.values,
-            labels={'x': 'Columns', 'y': 'Missing Values'},
-            title='Missing Values by Column'
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("✅ No missing values detected!")
+    st.subheader("📊 Data Quality Visualizations")
     
-    # Data type distribution
-    st.markdown("#### Data Type Distribution")
-    dtype_counts = original_df.dtypes.value_counts()
-    fig = px.pie(
-        values=dtype_counts.values,
-        names=dtype_counts.index.astype(str),
-        title='Distribution of Data Types'
-    )
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Numeric columns distribution
-    numeric_cols = original_df.select_dtypes(include=[np.number]).columns
-    if len(numeric_cols) > 0:
-        st.markdown("#### Numeric Columns Distribution")
-        selected_col = st.selectbox("Select numeric column", numeric_cols)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            fig = px.histogram(original_df, x=selected_col, title=f'Distribution of {selected_col}')
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            fig = px.box(original_df, y=selected_col, title=f'Box Plot of {selected_col}')
-            st.plotly_chart(fig, use_container_width=True)
-    
-    # Comparison if cleaned data exists
     if cleaned_df is not None:
-        st.markdown("#### Before vs After Comparison")
+        tab1, tab2, tab3, tab4 = st.tabs(["Missing Data", "Data Distribution", "Column Statistics", "Data Types"])
+    else:
+        tab1, tab2, tab3, tab4 = st.tabs(["Missing Data", "Data Distribution", "Column Statistics", "Data Types"])
+    
+    with tab1:
+        # Missing data visualization
         col1, col2 = st.columns(2)
         
         with col1:
-            st.metric("Original Rows", len(original_df))
-            st.metric("Original Nulls", original_df.isnull().sum().sum())
+            st.markdown("#### Original Data - Missing Values")
+            missing_orig = original_df.isnull().sum()
+            missing_pct_orig = (missing_orig / len(original_df) * 100).round(2)
+            
+            fig = go.Figure(data=[
+                go.Bar(
+                    x=missing_orig.index,
+                    y=missing_orig.values,
+                    text=missing_pct_orig.values,
+                    texttemplate='%{text}%',
+                    textposition='outside',
+                    marker_color='indianred'
+                )
+            ])
+            fig.update_layout(
+                title="Missing Values by Column",
+                xaxis_title="Column",
+                yaxis_title="Count",
+                height=400
+            )
+            st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            st.metric("Cleaned Rows", len(cleaned_df), delta=len(cleaned_df) - len(original_df))
-            st.metric("Cleaned Nulls", cleaned_df.isnull().sum().sum(), 
-                     delta=cleaned_df.isnull().sum().sum() - original_df.isnull().sum().sum())
-                     
-# Helper Functions
+            if cleaned_df is not None:
+                st.markdown("#### Cleaned Data - Missing Values")
+                missing_clean = cleaned_df.isnull().sum()
+                missing_pct_clean = (missing_clean / len(cleaned_df) * 100).round(2)
+                
+                fig = go.Figure(data=[
+                    go.Bar(
+                        x=missing_clean.index,
+                        y=missing_clean.values,
+                        text=missing_pct_clean.values,
+                        texttemplate='%{text}%',
+                        textposition='outside',
+                        marker_color='lightseagreen'
+                    )
+                ])
+                fig.update_layout(
+                    title="Missing Values by Column",
+                    xaxis_title="Column",
+                    yaxis_title="Count",
+                    height=400
+                )
+                st.plotly_chart(fig, use_container_width=True)
+    
+    with tab2:
+        # Data distribution for numeric columns
+        numeric_cols = original_df.select_dtypes(include=[np.number]).columns.tolist()
+        
+        if numeric_cols:
+            selected_col = st.selectbox("Select column to visualize:", numeric_cols, key="sql_viz_col")
+            
+            if cleaned_df is not None:
+                fig = make_subplots(
+                    rows=1, cols=2,
+                    subplot_titles=("Original Distribution", "Cleaned Distribution")
+                )
+                
+                fig.add_trace(
+                    go.Histogram(x=original_df[selected_col].dropna(), name="Original", marker_color='indianred'),
+                    row=1, col=1
+                )
+                
+                fig.add_trace(
+                    go.Histogram(x=cleaned_df[selected_col].dropna(), name="Cleaned", marker_color='lightseagreen'),
+                    row=1, col=2
+                )
+                
+                fig.update_layout(height=400, showlegend=True)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                fig = px.histogram(original_df, x=selected_col, title=f"Distribution of {selected_col}")
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No numeric columns found in the dataset")
+    
+    with tab3:
+        # Column statistics comparison
+        st.markdown("#### Statistical Summary")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Original Data**")
+            st.dataframe(original_df.describe(), use_container_width=True)
+        
+        with col2:
+            if cleaned_df is not None:
+                st.markdown("**Cleaned Data**")
+                st.dataframe(cleaned_df.describe(), use_container_width=True)
+    
+    with tab4:
+        # Data types visualization
+        dtype_counts_orig = original_df.dtypes.value_counts()
+        
+        if cleaned_df is not None:
+            dtype_counts_clean = cleaned_df.dtypes.value_counts()
+            
+            fig = make_subplots(
+                rows=1, cols=2,
+                specs=[[{"type": "pie"}, {"type": "pie"}]],
+                subplot_titles=("Original Data Types", "Cleaned Data Types")
+            )
+            
+            fig.add_trace(
+                go.Pie(labels=dtype_counts_orig.index.astype(str), values=dtype_counts_orig.values, name="Original"),
+                row=1, col=1
+            )
+            
+            fig.add_trace(
+                go.Pie(labels=dtype_counts_clean.index.astype(str), values=dtype_counts_clean.values, name="Cleaned"),
+                row=1, col=2
+            )
+            
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            fig = px.pie(values=dtype_counts_orig.values, names=dtype_counts_orig.index.astype(str), 
+                        title="Data Types Distribution")
+            st.plotly_chart(fig, use_container_width=True)
+            
 def generate_sample_data():
     """Generate sample sales data for demonstration"""
     np.random.seed(42)
@@ -2544,258 +2681,379 @@ elif page == "📥 Export":
         st.subheader("Data Preview")
         st.dataframe(df.head(10), use_container_width=True)
 
-elif page == "🧹 SQL Cleaner":
-    st.header("🧹 Advanced SQL CSV Cleaner")
-    st.markdown("Clean and transform your CSV data using powerful SQL queries with DuckDB")
+elif page == "🧹 SQL CSV Cleaner":
+    st.title("🧹 Advanced SQL CSV Cleaner & Analyzer")
+    st.markdown("Upload your CSV, clean it with SQL, and visualize the results!")
     
-    # Sidebar for SQL Cleaner
-    with st.sidebar:
-        st.markdown("---")
-        st.subheader("🧹 SQL Cleaner Upload")
-        uploaded_file_cleaner = st.file_uploader("Upload CSV for cleaning", type=['csv'], key="cleaner_upload")
+    # Upload section
+    st.markdown("### 📁 Upload CSV File")
+    uploaded_file_cleaner = st.file_uploader("Choose a CSV file to clean", type=['csv'], key="cleaner_upload")
     
     if uploaded_file_cleaner is not None:
         try:
-            # Load data
-            df = pd.read_csv(uploaded_file_cleaner)
-            st.session_state.original_df = df
+            # Load the data
+            df_cleaner = pd.read_csv(uploaded_file_cleaner)
+            st.session_state.original_df = df_cleaner
             
             # Register with DuckDB
-            st.session_state.con.register('uploaded_data', df)
+            st.session_state.con.register('uploaded_data', df_cleaner)
             
-            # Success message
-            st.success(f"✅ Successfully loaded {len(df):,} rows and {len(df.columns)} columns")
+            # Show success message
+            st.success(f"✅ Successfully loaded {len(df_cleaner):,} rows and {len(df_cleaner.columns)} columns")
             
-            # Create tabs
-            tab1, tab2, tab3 = st.tabs(["🔧 SQL Editor", "📊 Visualizations", "📋 Data Preview"])
+            # Show metrics
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Rows", f"{len(df_cleaner):,}")
+            with col2:
+                st.metric("Total Columns", len(df_cleaner.columns))
+            with col3:
+                st.metric("Missing Values", f"{df_cleaner.isnull().sum().sum():,}")
+            with col4:
+                st.metric("Duplicates", f"{df_cleaner.duplicated().sum():,}")
+            
+            st.markdown("---")
+            
+            # Create tabs for different sections
+            tab1, tab2, tab3, tab4 = st.tabs(["🔧 SQL Editor", "📊 Visualizations", "📋 Data Preview", "📈 Statistics"])
             
             with tab1:
-                # SQL Template selector
-                st.subheader("📝 SQL Templates")
+                st.subheader("SQL Query Builder")
                 
-                template_name = st.selectbox(
-                    "Choose a cleaning template:",
-                    list(ADVANCED_SQL_TEMPLATES.keys())
-                )
+                # Template selection
+                col1, col2 = st.columns([2, 1])
                 
+                with col1:
+                    template_name = st.selectbox(
+                        "Choose a cleaning template:",
+                        list(ADVANCED_SQL_TEMPLATES.keys()),
+                        help="Select a pre-built SQL template or create a custom query"
+                    )
+                
+                with col2:
+                    if st.button("📜 View Query History"):
+                        if st.session_state.query_history:
+                            with st.expander("Previous Queries", expanded=True):
+                                for i, query in enumerate(reversed(st.session_state.query_history[-10:])):
+                                    st.code(query, language='sql')
+                        else:
+                            st.info("No query history yet")
+                
+                # Show template description
                 template = ADVANCED_SQL_TEMPLATES[template_name]
                 st.info(f"ℹ️ {template['description']}")
                 
-                # Handle templates that require column selection
+                # Handle column-specific templates
                 sql_query = template['sql']
                 
                 if template.get('requires_columns'):
-                    st.markdown("#### Column Selection")
+                    st.markdown("#### 🎯 Column Configuration")
                     
                     if 'Remove Duplicates (Keep First)' in template_name:
-                        dup_cols = st.multiselect("Select columns to check for duplicates:", df.columns.tolist())
-                        order_col = st.selectbox("Order by column:", df.columns.tolist())
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            dup_cols = st.multiselect(
+                                "Select columns to check for duplicates:",
+                                df_cleaner.columns.tolist(),
+                                help="Choose which columns define a duplicate"
+                            )
+                        with col2:
+                            order_col = st.selectbox(
+                                "Order by column:",
+                                df_cleaner.columns.tolist(),
+                                help="Choose which row to keep when duplicates found"
+                            )
+                        
                         if dup_cols and order_col:
                             sql_query = sql_query.replace('{columns}', ', '.join(dup_cols))
                             sql_query = sql_query.replace('{order_col}', order_col)
                     
                     elif 'Null Rows (Specific' in template_name:
-                        null_cols = st.multiselect("Select columns to check for nulls:", df.columns.tolist())
+                        null_cols = st.multiselect(
+                            "Select columns to check for nulls:",
+                            df_cleaner.columns.tolist(),
+                            help="Rows with NULL in these columns will be removed"
+                        )
                         if null_cols:
                             null_checks = [f"{col} IS NOT NULL" for col in null_cols]
                             sql_query = sql_query.replace('{columns_not_null}', ' AND '.join(null_checks))
                     
                     elif 'Outliers' in template_name:
-                        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+                        numeric_cols = df_cleaner.select_dtypes(include=[np.number]).columns.tolist()
                         if numeric_cols:
-                            outlier_col = st.selectbox("Select numeric column for outlier detection:", numeric_cols)
+                            outlier_col = st.selectbox(
+                                "Select numeric column for outlier detection:",
+                                numeric_cols,
+                                help="Statistical outliers will be identified and removed"
+                            )
                             sql_query = sql_query.replace('{column}', outlier_col)
+                        else:
+                            st.warning("No numeric columns found for outlier detection")
+                    
+                    elif 'Email Validation' in template_name:
+                        text_cols = df_cleaner.select_dtypes(include=['object']).columns.tolist()
+                        if text_cols:
+                            email_col = st.selectbox(
+                                "Select email column:",
+                                text_cols,
+                                help="Only valid email addresses will be kept"
+                            )
+                            sql_query = sql_query.replace('{email_column}', email_col)
+                    
+                    elif 'Phone Number' in template_name:
+                        text_cols = df_cleaner.select_dtypes(include=['object']).columns.tolist()
+                        if text_cols:
+                            phone_col = st.selectbox(
+                                "Select phone number column:",
+                                text_cols,
+                                help="Phone numbers will be standardized (digits only)"
+                            )
+                            sql_query = sql_query.replace('{phone_column}', phone_col)
                 
                 elif template.get('dynamic'):
-                    sql_query = generate_dynamic_sql(template, df)
+                    sql_query = generate_dynamic_sql(template_name, df_cleaner)
                 
                 # SQL Editor
-                st.subheader("✏️ SQL Query Editor")
+                st.markdown("#### ✏️ SQL Query Editor")
                 sql_query = st.text_area(
                     "Edit your SQL query:",
                     value=sql_query,
-                    height=200,
-                    help="Table name is 'uploaded_data'"
+                    height=250,
+                    help="Table name is 'uploaded_data'. Modify the query as needed."
                 )
                 
+                st.caption("💡 **Tip:** Table name is always `uploaded_data`. Use standard SQL syntax.")
+                
                 # Execute button
-                col1, col2, col3 = st.columns([1, 1, 2])
+                col1, col2, col3 = st.columns([2, 2, 6])
                 
                 with col1:
                     execute_btn = st.button("▶️ Execute Query", type="primary", use_container_width=True)
                 
                 with col2:
-                    if st.button("📜 Query History", use_container_width=True):
-                        if st.session_state.query_history:
-                            with st.expander("Previous Queries", expanded=True):
-                                for i, query in enumerate(reversed(st.session_state.query_history[-5:])):
-                                    st.code(query, language='sql')
+                    if st.button("🔄 Reset Query", use_container_width=True):
+                        st.rerun()
                 
-                # Execute query
+                # Execute the query
                 if execute_btn and sql_query.strip():
                     try:
-                        # Execute the query
-                        result = st.session_state.con.execute(sql_query).fetchdf()
-                        st.session_state.cleaned_df = result
-                        
-                        # Add to history
-                        if sql_query not in st.session_state.query_history:
-                            st.session_state.query_history.append(sql_query)
-                        
-                        # Show results
-                        st.success(f"✅ Query executed successfully! Result: {len(result):,} rows")
-                        
-                        # Before/After comparison
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("Original Rows", f"{len(df):,}")
-                        with col2:
-                            st.metric("Cleaned Rows", f"{len(result):,}", delta=f"{len(result) - len(df):,}")
-                        with col3:
-                            pct_change = ((len(result) - len(df)) / len(df) * 100) if len(df) > 0 else 0
-                            st.metric("Change", f"{pct_change:.1f}%")
-                        
-                        # Display result
-                        st.subheader("🎯 Cleaned Data")
-                        st.dataframe(result, use_container_width=True, height=400)
-                        
-                        # Download options
-                        st.markdown("---")
-                        st.subheader("💾 Download Cleaned Data")
-                        
-                        col1, col2, col3, col4 = st.columns(4)
-                        
-                        with col1:
-                            csv = result.to_csv(index=False)
-                            st.download_button(
-                                "📥 CSV",
-                                data=csv,
-                                file_name=f"cleaned_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                                mime="text/csv",
-                                use_container_width=True
-                            )
-                        
-                        with col2:
-                            buffer = BytesIO()
-                            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                                result.to_excel(writer, index=False, sheet_name='Cleaned Data')
-                                df.to_excel(writer, index=False, sheet_name='Original Data')
+                        with st.spinner("Executing query..."):
+                            # Execute the SQL query
+                            result = st.session_state.con.execute(sql_query).fetchdf()
+                            st.session_state.cleaned_df = result
                             
-                            st.download_button(
-                                "📥 Excel",
-                                data=buffer.getvalue(),
-                                file_name=f"cleaned_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                use_container_width=True
-                            )
-                        
-                        with col3:
-                            st.download_button(
-                                "📥 SQL",
-                                data=sql_query,
-                                file_name="cleaning_query.sql",
-                                mime="text/plain",
-                                use_container_width=True
-                            )
-                        
-                        with col4:
-                            json_data = result.to_json(orient='records', indent=2)
-                            st.download_button(
-                                "📥 JSON",
-                                data=json_data,
-                                file_name=f"cleaned_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                                mime="application/json",
-                                use_container_width=True
-                            )
+                            # Add to query history
+                            if sql_query not in st.session_state.query_history:
+                                st.session_state.query_history.append(sql_query)
+                            
+                            # Show success message
+                            st.success(f"✅ Query executed successfully!")
+                            
+                            # Show before/after metrics
+                            st.markdown("#### 📊 Cleaning Results")
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                st.metric(
+                                    "Original Rows",
+                                    f"{len(df_cleaner):,}",
+                                    help="Number of rows before cleaning"
+                                )
+                            
+                            with col2:
+                                rows_change = len(result) - len(df_cleaner)
+                                st.metric(
+                                    "Cleaned Rows",
+                                    f"{len(result):,}",
+                                    delta=f"{rows_change:,}",
+                                    help="Number of rows after cleaning"
+                                )
+                            
+                            with col3:
+                                pct_change = (rows_change / len(df_cleaner) * 100) if len(df_cleaner) > 0 else 0
+                                st.metric(
+                                    "Change %",
+                                    f"{pct_change:.1f}%",
+                                    help="Percentage change in row count"
+                                )
+                            
+                            with col4:
+                                nulls_removed = df_cleaner.isnull().sum().sum() - result.isnull().sum().sum()
+                                st.metric(
+                                    "Nulls Removed",
+                                    f"{nulls_removed:,}",
+                                    delta=f"-{nulls_removed:,}" if nulls_removed > 0 else "0",
+                                    help="Number of NULL values removed"
+                                )
+                            
+                            # Display cleaned data
+                            st.markdown("#### 🎯 Cleaned Data Preview")
+                            st.dataframe(result, use_container_width=True, height=400)
+                            
+                            # Download section
+                            st.markdown("---")
+                            st.markdown("#### 💾 Download Cleaned Data")
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                csv_data = result.to_csv(index=False)
+                                st.download_button(
+                                    label="📥 CSV",
+                                    data=csv_data,
+                                    file_name=f"cleaned_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                    mime="text/csv",
+                                    use_container_width=True,
+                                    help="Download as CSV file"
+                                )
+                            
+                            with col2:
+                                buffer = BytesIO()
+                                with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+                                    result.to_excel(writer, index=False, sheet_name='Cleaned Data')
+                                    df_cleaner.to_excel(writer, index=False, sheet_name='Original Data')
+                                
+                                st.download_button(
+                                    label="📥 Excel",
+                                    data=buffer.getvalue(),
+                                    file_name=f"cleaned_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                    use_container_width=True,
+                                    help="Download as Excel with original and cleaned sheets"
+                                )
+                            
+                            with col3:
+                                st.download_button(
+                                    label="📥 SQL Query",
+                                    data=sql_query,
+                                    file_name=f"cleaning_query_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql",
+                                    mime="text/plain",
+                                    use_container_width=True,
+                                    help="Save SQL query for reuse"
+                                )
+                            
+                            with col4:
+                                json_data = result.to_json(orient='records', indent=2)
+                                st.download_button(
+                                    label="📥 JSON",
+                                    data=json_data,
+                                    file_name=f"cleaned_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                                    mime="application/json",
+                                    use_container_width=True,
+                                    help="Download as JSON format"
+                                )
                         
                     except Exception as e:
                         st.error(f"❌ Error executing query: {str(e)}")
-                        st.info("💡 Tip: Check your SQL syntax and ensure table name is 'uploaded_data'")
+                        st.info("💡 **Troubleshooting Tips:**\n"
+                               "- Check SQL syntax is correct\n"
+                               "- Ensure table name is 'uploaded_data'\n"
+                               "- Verify column names match your data\n"
+                               "- Check for proper use of quotes around strings")
+                        
+                        with st.expander("📋 Show Full Error Details"):
+                            st.code(traceback.format_exc())
             
             with tab2:
                 # Visualizations
                 if st.session_state.cleaned_df is not None:
-                    create_visualizations(st.session_state.original_df, st.session_state.cleaned_df)
+                    create_sql_cleaner_visualizations(st.session_state.original_df, st.session_state.cleaned_df)
                 else:
-                    create_visualizations(st.session_state.original_df)
+                    create_sql_cleaner_visualizations(st.session_state.original_df)
             
             with tab3:
-                # Data preview tabs
-                preview_tab1, preview_tab2, preview_tab3 = st.tabs(["Original Data", "Column Details", "Data Profile"])
+                # Data preview
+                st.subheader("Original Data")
+                st.dataframe(df_cleaner, use_container_width=True, height=400)
                 
-                with preview_tab1:
-                    st.dataframe(df, use_container_width=True)
+                st.markdown("---")
+                st.subheader("Column Information")
                 
-                with preview_tab2:
-                    # Column information
-                    col_info = pd.DataFrame({
-                        'Column': df.columns,
-                        'Type': df.dtypes.astype(str),
-                        'Non-Null': df.count().values,
-                        'Null Count': df.isnull().sum().values,
-                        'Null %': (df.isnull().sum() / len(df) * 100).round(2).values,
-                        'Unique': [df[col].nunique() for col in df.columns],
-                        'Sample Values': [str(df[col].dropna().head(3).tolist()[:3]) for col in df.columns]
-                    })
-                    st.dataframe(col_info, use_container_width=True, hide_index=True)
+                col_info = pd.DataFrame({
+                    'Column': df_cleaner.columns,
+                    'Data Type': df_cleaner.dtypes.astype(str),
+                    'Non-Null Count': df_cleaner.count().values,
+                    'Null Count': df_cleaner.isnull().sum().values,
+                    'Null %': (df_cleaner.isnull().sum() / len(df_cleaner) * 100).round(2).values,
+                    'Unique Values': [df_cleaner[col].nunique() for col in df_cleaner.columns],
+                    'Sample Values': [str(df_cleaner[col].dropna().head(3).tolist()) for col in df_cleaner.columns]
+                })
                 
-                with preview_tab3:
-                    # Data profiling
-                    st.markdown("#### Data Profile Summary")
-                    
-                    profile_data = {
-                        'Characteristic': [
-                            'Total Records',
-                            'Total Features',
-                            'Numeric Features',
-                            'Categorical Features',
-                            'Boolean Features',
-                            'DateTime Features',
-                            'Missing Cells',
-                            'Missing Cells %',
-                            'Duplicate Rows',
-                            'Duplicate Rows %',
-                            'Total Memory'
-                        ],
-                        'Value': [
-                            f"{len(df):,}",
-                            len(df.columns),
-                            len(df.select_dtypes(include=[np.number]).columns),
-                            len(df.select_dtypes(include=['object']).columns),
-                            len(df.select_dtypes(include=['bool']).columns),
-                            len(df.select_dtypes(include=['datetime64']).columns),
-                            f"{df.isnull().sum().sum():,}",
-                            f"{(df.isnull().sum().sum() / (len(df) * len(df.columns)) * 100):.2f}%",
-                            f"{df.duplicated().sum():,}",
-                            f"{(df.duplicated().sum() / len(df) * 100):.2f}%",
-                            f"{df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
-                        ]
-                    }
-                    
-                    st.dataframe(pd.DataFrame(profile_data), use_container_width=True, hide_index=True)
+                st.dataframe(col_info, use_container_width=True, hide_index=True)
+            
+            with tab4:
+                # Statistics
+                st.subheader("📊 Data Profile")
+                
+                profile_data = {
+                    'Metric': [
+                        'Total Records',
+                        'Total Features',
+                        'Numeric Features',
+                        'Categorical Features',
+                        'Boolean Features',
+                        'DateTime Features',
+                        'Total Missing Cells',
+                        'Missing Cells %',
+                        'Duplicate Rows',
+                        'Duplicate Rows %',
+                        'Memory Usage'
+                    ],
+                    'Value': [
+                        f"{len(df_cleaner):,}",
+                        len(df_cleaner.columns),
+                        len(df_cleaner.select_dtypes(include=[np.number]).columns),
+                        len(df_cleaner.select_dtypes(include=['object']).columns),
+                        len(df_cleaner.select_dtypes(include=['bool']).columns),
+                        len(df_cleaner.select_dtypes(include=['datetime64']).columns),
+                        f"{df_cleaner.isnull().sum().sum():,}",
+                        f"{(df_cleaner.isnull().sum().sum() / (len(df_cleaner) * len(df_cleaner.columns)) * 100):.2f}%",
+                        f"{df_cleaner.duplicated().sum():,}",
+                        f"{(df_cleaner.duplicated().sum() / len(df_cleaner) * 100):.2f}%",
+                        f"{df_cleaner.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
+                    ]
+                }
+                
+                st.dataframe(pd.DataFrame(profile_data), use_container_width=True, hide_index=True)
+                
+                # Numeric statistics
+                st.markdown("---")
+                st.subheader("📈 Numeric Column Statistics")
+                numeric_stats = df_cleaner.describe()
+                if not numeric_stats.empty:
+                    st.dataframe(numeric_stats, use_container_width=True)
+                else:
+                    st.info("No numeric columns found in the dataset")
         
         except Exception as e:
             st.error(f"❌ Error loading file: {str(e)}")
-            st.info("💡 Make sure your file is a valid CSV format")
+            st.info("💡 Please ensure your file is a valid CSV format")
+            
+            with st.expander("📋 Show Error Details"):
+                st.code(traceback.format_exc())
     
     else:
-        # Welcome screen for SQL Cleaner
-        st.info("👆 Upload a CSV file from the sidebar under 'SQL Cleaner Upload' to get started!")
+        # Welcome screen
+        st.info("👆 Upload a CSV file above to get started with SQL-based data cleaning!")
+        
+        st.markdown("---")
         
         # Feature showcase
-        st.subheader("🌟 SQL Cleaner Features")
+        st.subheader("🌟 SQL CSV Cleaner Features")
         
         col1, col2, col3 = st.columns(3)
         
         with col1:
             st.markdown("""
             #### 🔧 Data Cleaning
-            - 10+ SQL templates
-            - Custom query editor
-            - Duplicate removal
-            - Null value handling
+            - **15+ SQL Templates**
+            - Remove duplicates
+            - Handle NULL values
             - Text standardization
             - Outlier detection
+            - Email & phone validation
+            - Custom SQL queries
             """)
         
         with col2:
@@ -2803,49 +3061,117 @@ elif page == "🧹 SQL Cleaner":
             #### 📊 Visualizations
             - Missing data analysis
             - Distribution plots
-            - Statistical summaries
             - Before/after comparison
+            - Statistical summaries
             - Data type analysis
-            - Interactive charts
+            - Column profiling
             """)
         
         with col3:
             st.markdown("""
             #### 💾 Export Options
             - CSV download
-            - Excel with multiple sheets
-            - JSON export
+            - Excel (multi-sheet)
+            - JSON format
             - SQL query export
             - Query history
-            - Data profiling report
+            - Detailed statistics
             """)
         
-        # SQL cheat sheet
-        with st.expander("📚 SQL Cleaning Quick Reference"):
+        st.markdown("---")
+        
+        # SQL Quick Reference
+        with st.expander("📚 SQL Quick Reference Guide"):
             st.markdown("""
             ### Common SQL Operations
             
-            **Remove Duplicates:**
+            **Remove All Duplicates:**
             ```sql
             SELECT DISTINCT * FROM uploaded_data
             ```
             
-            **Remove Nulls:**
+            **Remove Rows with ANY NULL:**
             ```sql
             SELECT * FROM uploaded_data 
-            WHERE column1 IS NOT NULL AND column2 IS NOT NULL
+            WHERE column1 IS NOT NULL 
+            AND column2 IS NOT NULL 
+            AND column3 IS NOT NULL
             ```
             
             **Trim Whitespace:**
             ```sql
-            SELECT TRIM(column_name) AS column_name FROM uploaded_data
-            ```
-            
-            **Standardize Text:**
-            ```sql
-            SELECT UPPER(TRIM(column_name)) AS column_name 
+            SELECT TRIM(column_name) AS column_name, 
+                   other_column 
             FROM uploaded_data
             ```
+            
+            **Convert to Uppercase:**
+            ```sql
+            SELECT UPPER(column_name) AS column_name 
+            FROM uploaded_data
+            ```
+            
+            **Fill NULLs with Default:**
+            ```sql
+            SELECT COALESCE(column_name, 'default_value') AS column_name 
+            FROM uploaded_data
+            ```
+            
+            **Remove Outliers (IQR Method):**
+            ```sql
+            WITH stats AS (
+                SELECT 
+                    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY value) as q1,
+                    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY value) as q3
+                FROM uploaded_data
+            )
+            SELECT * FROM uploaded_data, stats
+            WHERE value BETWEEN q1 - 1.5*(q3-q1) AND q3 + 1.5*(q3-q1)
+            ```
+            
+            **Filter by Pattern:**
+            ```sql
+            SELECT * FROM uploaded_data 
+            WHERE column_name LIKE '%pattern%'
+            ```
+            
+            **Validate Email:**
+            ```sql
+            SELECT * FROM uploaded_data 
+            WHERE regexp_matches(email, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$')
+            ```
+            
+            **Aggregate by Group:**
+            ```sql
+            SELECT category, 
+                   COUNT(*) as count,
+                   AVG(value) as avg_value
+            FROM uploaded_data
+            GROUP BY category
+            ORDER BY count DESC
+            ```
+            """)
+        
+        # Tips and tricks
+        with st.expander("💡 Tips & Tricks"):
+            st.markdown("""
+            ### Pro Tips for SQL Cleaning
+            
+            1. **Start Simple:** Begin with basic templates and customize as needed
+            2. **Test Incrementally:** Run queries on small subsets first
+            3. **Save Your Queries:** Use the SQL download button to save working queries
+            4. **Check Before/After:** Always review the metrics and visualizations
+            5. **Use Query History:** Reference previous successful queries
+            6. **Combine Operations:** Chain multiple cleaning steps in one query
+            7. **Export Both Versions:** Download Excel to keep original and cleaned data together
+            
+            ### Common Patterns
+            
+            - **Chain Operations:** Use CTEs (WITH clauses) to perform multiple steps
+            - **Conditional Logic:** Use CASE statements for complex transformations
+            - **Window Functions:** Use for running totals, ranks, and percentiles
+            - **String Functions:** TRIM, UPPER, LOWER, REPLACE for text cleaning
+            - **Aggregations:** GROUP BY for summarizing data
             """)
             
 # Footer
