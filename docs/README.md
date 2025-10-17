@@ -8,7 +8,7 @@
 [![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-yellow)](https://ai.google.dev/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-Latest-orange)](https://duckdb.org/)
 
-[Live Demo](https://ai-bi-dashboard-yajxi5tkqxsrpguy7yh8zu.streamlit.app) | [Documentation](#-documentation) | [Features](#-features) | [Installation](#-installation)
+[Live Demo](https://ai-bi-dashboard-yajxi5tkqxsrpguy7yh8zu.streamlit.app) | [Documentation](#-documentation) | [Features](#-features) | [Installation](#-quick-start)
 
 ---
 
