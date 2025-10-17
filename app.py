@@ -133,7 +133,7 @@ if 'query_history' not in st.session_state:
 if 'original_df' not in st.session_state:
     st.session_state.original_df = None
 if 'cleaned_df' not in st.session_state:
-    st.session_state.cleaned_df = None 
+    st.session_state.cleaned_df = None    
 
 # Configure Gemini AI
 def configure_gemini(api_key, model_name='gemini-2.5-flash'):
@@ -447,11 +447,6 @@ ADVANCED_SQL_TEMPLATES = {
         "description": "Replace NULL values with defaults (0 for numbers, 'Unknown' for text)",
         "dynamic": True
     },
-    "Fill Null with Mean (Numeric)": {
-        "sql": """SELECT {filled_mean_columns} FROM uploaded_data""",
-        "description": "Replace NULL numeric values with column mean",
-        "dynamic": True
-    },
     "Remove Outliers (IQR Method)": {
         "sql": """WITH stats AS (
     SELECT 
@@ -470,251 +465,119 @@ WHERE {column} BETWEEN lower_bound AND upper_bound""",
         "description": "Remove statistical outliers using IQR method",
         "requires_columns": True
     },
-    "Remove Outliers (Z-Score)": {
-        "sql": """WITH stats AS (
-    SELECT 
-        AVG({column}) as mean,
-        STDDEV({column}) as std
-    FROM uploaded_data
-)
-SELECT * FROM uploaded_data, stats
-WHERE ABS(({column} - mean) / std) <= 3""",
-        "description": "Remove outliers beyond 3 standard deviations",
-        "requires_columns": True
-    },
-    "Email Validation": {
-        "sql": """SELECT * FROM uploaded_data 
-WHERE regexp_matches({email_column}, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$')""",
-        "description": "Keep only valid email addresses",
-        "requires_columns": True
-    },
-    "Phone Number Standardization": {
-        "sql": """SELECT 
-    regexp_replace({phone_column}, '[^0-9]', '', 'g') as standardized_phone,
-    * EXCLUDE ({phone_column})
-FROM uploaded_data""",
-        "description": "Standardize phone numbers (remove non-digits)",
-        "requires_columns": True
-    },
-    "Complete Data Cleaning Pipeline": {
-        "sql": """WITH cleaned AS (
-    SELECT DISTINCT * FROM uploaded_data
-    WHERE {null_check}
-),
-trimmed AS (
-    SELECT {trimmed_columns} FROM cleaned
-),
-final AS (
-    SELECT * FROM trimmed WHERE {empty_check}
-)
-SELECT * FROM final""",
-        "description": "Full pipeline: remove duplicates, nulls, trim, and remove empties",
-        "dynamic": True
-    }
 }
-                     
-# Helper Functions
-def generate_dynamic_sql(template_name, df):
-    """Generate SQL with column-specific logic"""
-    template = ADVANCED_SQL_TEMPLATES[template_name]
-    sql = template["sql"]
+
+def generate_dynamic_sql(template, df, **kwargs):
+    """Generate SQL queries dynamically based on data structure"""
+    sql = template['sql']
     
-    if not template.get("dynamic"):
-        return sql
+    if template.get('dynamic'):
+        if 'null_check' in sql:
+            # Generate null check for all columns
+            null_checks = [f"{col} IS NOT NULL" for col in df.columns]
+            sql = sql.replace('{null_check}', ' AND '.join(null_checks))
+        
+        if 'trimmed_columns' in sql:
+            # Generate trimmed columns
+            text_cols = df.select_dtypes(include=['object']).columns
+            trimmed = [f"TRIM({col}) as {col}" for col in text_cols]
+            other_cols = [col for col in df.columns if col not in text_cols]
+            all_cols = trimmed + other_cols
+            sql = sql.replace('{trimmed_columns}', ', '.join(all_cols))
+        
+        if 'upper_columns' in sql:
+            text_cols = df.select_dtypes(include=['object']).columns
+            upper = [f"UPPER({col}) as {col}" for col in text_cols]
+            other_cols = [col for col in df.columns if col not in text_cols]
+            all_cols = upper + other_cols
+            sql = sql.replace('{upper_columns}', ', '.join(all_cols))
+        
+        if 'lower_columns' in sql:
+            text_cols = df.select_dtypes(include=['object']).columns
+            lower = [f"LOWER({col}) as {col}" for col in text_cols]
+            other_cols = [col for col in df.columns if col not in text_cols]
+            all_cols = lower + other_cols
+            sql = sql.replace('{lower_columns}', ', '.join(all_cols))
+        
+        if 'empty_check' in sql:
+            text_cols = df.select_dtypes(include=['object']).columns
+            empty_checks = [f"{col} != ''" for col in text_cols]
+            sql = sql.replace('{empty_check}', ' AND '.join(empty_checks) if empty_checks else 'TRUE')
+        
+        if 'filled_columns' in sql:
+            filled = []
+            for col in df.columns:
+                if df[col].dtype in [np.number, 'int64', 'float64']:
+                    filled.append(f"COALESCE({col}, 0) as {col}")
+                else:
+                    filled.append(f"COALESCE({col}, 'Unknown') as {col}")
+            sql = sql.replace('{filled_columns}', ', '.join(filled))
     
-    text_cols = df.select_dtypes(include=['object']).columns.tolist()
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-    all_cols = df.columns.tolist()
-    
-    # Generate trimmed columns
-    if "{trimmed_columns}" in sql:
-        trimmed = [f"TRIM({col}) AS {col}" if col in text_cols else col for col in all_cols]
-        sql = sql.replace("{trimmed_columns}", ", ".join(trimmed))
-    
-    # Generate uppercase columns
-    if "{upper_columns}" in sql:
-        upper = [f"UPPER(TRIM({col})) AS {col}" if col in text_cols else col for col in all_cols]
-        sql = sql.replace("{upper_columns}", ", ".join(upper))
-    
-    # Generate lowercase columns
-    if "{lower_columns}" in sql:
-        lower = [f"LOWER(TRIM({col})) AS {col}" if col in text_cols else col for col in all_cols]
-        sql = sql.replace("{lower_columns}", ", ".join(lower))
-    
-    # Generate null check
-    if "{null_check}" in sql:
-        null_checks = [f"{col} IS NOT NULL" for col in all_cols]
-        sql = sql.replace("{null_check}", " AND ".join(null_checks))
-    
-    # Generate empty string check
-    if "{empty_check}" in sql:
-        empty_checks = [f"{col} != ''" for col in text_cols]
-        if empty_checks:
-            sql = sql.replace("{empty_check}", " AND ".join(empty_checks))
-        else:
-            sql = sql.replace("WHERE {empty_check}", "")
-    
-    # Generate filled columns (default values)
-    if "{filled_columns}" in sql:
-        filled = []
-        for col in all_cols:
-            if col in numeric_cols:
-                filled.append(f"COALESCE({col}, 0) AS {col}")
-            elif col in text_cols:
-                filled.append(f"COALESCE({col}, 'Unknown') AS {col}")
-            else:
-                filled.append(col)
-        sql = sql.replace("{filled_columns}", ", ".join(filled))
-    
-    # Generate filled columns (mean)
-    if "{filled_mean_columns}" in sql:
-        filled_mean = []
-        for col in all_cols:
-            if col in numeric_cols:
-                filled_mean.append(f"COALESCE({col}, (SELECT AVG({col}) FROM uploaded_data)) AS {col}")
-            else:
-                filled_mean.append(col)
-        sql = sql.replace("{filled_mean_columns}", ", ".join(filled_mean))
+    # Handle requires_columns templates
+    if template.get('requires_columns'):
+        for key, value in kwargs.items():
+            sql = sql.replace('{' + key + '}', str(value))
     
     return sql
 
-def create_sql_cleaner_visualizations(original_df, cleaned_df=None):
-    """Create before/after visualizations for SQL Cleaner"""
+def create_visualizations(original_df, cleaned_df=None):
+    """Create visualizations for data quality analysis"""
+    st.subheader("📊 Data Visualizations")
     
-    st.subheader("📊 Data Quality Visualizations")
-    
-    if cleaned_df is not None:
-        tab1, tab2, tab3, tab4 = st.tabs(["Missing Data", "Data Distribution", "Column Statistics", "Data Types"])
+    # Missing data visualization
+    st.markdown("#### Missing Data Analysis")
+    missing_data = original_df.isnull().sum()
+    if missing_data.sum() > 0:
+        fig = px.bar(
+            x=missing_data.index,
+            y=missing_data.values,
+            labels={'x': 'Columns', 'y': 'Missing Values'},
+            title='Missing Values by Column'
+        )
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        tab1, tab2, tab3, tab4 = st.tabs(["Missing Data", "Data Distribution", "Column Statistics", "Data Types"])
+        st.info("✅ No missing values detected!")
     
-    with tab1:
-        # Missing data visualization
-        col1, col2 = st.columns(2)
+    # Data type distribution
+    st.markdown("#### Data Type Distribution")
+    dtype_counts = original_df.dtypes.value_counts()
+    fig = px.pie(
+        values=dtype_counts.values,
+        names=dtype_counts.index.astype(str),
+        title='Distribution of Data Types'
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Numeric columns distribution
+    numeric_cols = original_df.select_dtypes(include=[np.number]).columns
+    if len(numeric_cols) > 0:
+        st.markdown("#### Numeric Columns Distribution")
+        selected_col = st.selectbox("Select numeric column", numeric_cols)
         
+        col1, col2 = st.columns(2)
         with col1:
-            st.markdown("#### Original Data - Missing Values")
-            missing_orig = original_df.isnull().sum()
-            missing_pct_orig = (missing_orig / len(original_df) * 100).round(2)
-            
-            fig = go.Figure(data=[
-                go.Bar(
-                    x=missing_orig.index,
-                    y=missing_orig.values,
-                    text=missing_pct_orig.values,
-                    texttemplate='%{text}%',
-                    textposition='outside',
-                    marker_color='indianred'
-                )
-            ])
-            fig.update_layout(
-                title="Missing Values by Column",
-                xaxis_title="Column",
-                yaxis_title="Count",
-                height=400
-            )
+            fig = px.histogram(original_df, x=selected_col, title=f'Distribution of {selected_col}')
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            if cleaned_df is not None:
-                st.markdown("#### Cleaned Data - Missing Values")
-                missing_clean = cleaned_df.isnull().sum()
-                missing_pct_clean = (missing_clean / len(cleaned_df) * 100).round(2)
-                
-                fig = go.Figure(data=[
-                    go.Bar(
-                        x=missing_clean.index,
-                        y=missing_clean.values,
-                        text=missing_pct_clean.values,
-                        texttemplate='%{text}%',
-                        textposition='outside',
-                        marker_color='lightseagreen'
-                    )
-                ])
-                fig.update_layout(
-                    title="Missing Values by Column",
-                    xaxis_title="Column",
-                    yaxis_title="Count",
-                    height=400
-                )
-                st.plotly_chart(fig, use_container_width=True)
+            fig = px.box(original_df, y=selected_col, title=f'Box Plot of {selected_col}')
+            st.plotly_chart(fig, use_container_width=True)
     
-    with tab2:
-        # Data distribution for numeric columns
-        numeric_cols = original_df.select_dtypes(include=[np.number]).columns.tolist()
-        
-        if numeric_cols:
-            selected_col = st.selectbox("Select column to visualize:", numeric_cols, key="sql_viz_col")
-            
-            if cleaned_df is not None:
-                fig = make_subplots(
-                    rows=1, cols=2,
-                    subplot_titles=("Original Distribution", "Cleaned Distribution")
-                )
-                
-                fig.add_trace(
-                    go.Histogram(x=original_df[selected_col].dropna(), name="Original", marker_color='indianred'),
-                    row=1, col=1
-                )
-                
-                fig.add_trace(
-                    go.Histogram(x=cleaned_df[selected_col].dropna(), name="Cleaned", marker_color='lightseagreen'),
-                    row=1, col=2
-                )
-                
-                fig.update_layout(height=400, showlegend=True)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                fig = px.histogram(original_df, x=selected_col, title=f"Distribution of {selected_col}")
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No numeric columns found in the dataset")
-    
-    with tab3:
-        # Column statistics comparison
-        st.markdown("#### Statistical Summary")
-        
+    # Comparison if cleaned data exists
+    if cleaned_df is not None:
+        st.markdown("#### Before vs After Comparison")
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("**Original Data**")
-            st.dataframe(original_df.describe(), use_container_width=True)
+            st.metric("Original Rows", len(original_df))
+            st.metric("Original Nulls", original_df.isnull().sum().sum())
         
         with col2:
-            if cleaned_df is not None:
-                st.markdown("**Cleaned Data**")
-                st.dataframe(cleaned_df.describe(), use_container_width=True)
-    
-    with tab4:
-        # Data types visualization
-        dtype_counts_orig = original_df.dtypes.value_counts()
-        
-        if cleaned_df is not None:
-            dtype_counts_clean = cleaned_df.dtypes.value_counts()
-            
-            fig = make_subplots(
-                rows=1, cols=2,
-                specs=[[{"type": "pie"}, {"type": "pie"}]],
-                subplot_titles=("Original Data Types", "Cleaned Data Types")
-            )
-            
-            fig.add_trace(
-                go.Pie(labels=dtype_counts_orig.index.astype(str), values=dtype_counts_orig.values, name="Original"),
-                row=1, col=1
-            )
-            
-            fig.add_trace(
-                go.Pie(labels=dtype_counts_clean.index.astype(str), values=dtype_counts_clean.values, name="Cleaned"),
-                row=1, col=2
-            )
-            
-            fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            fig = px.pie(values=dtype_counts_orig.values, names=dtype_counts_orig.index.astype(str), 
-                        title="Data Types Distribution")
-            st.plotly_chart(fig, use_container_width=True)
-            
+            st.metric("Cleaned Rows", len(cleaned_df), delta=len(cleaned_df) - len(original_df))
+            st.metric("Cleaned Nulls", cleaned_df.isnull().sum().sum(), 
+                     delta=cleaned_df.isnull().sum().sum() - original_df.isnull().sum().sum())
+                     
+# Helper Functions
 def generate_sample_data():
     """Generate sample sales data for demonstration"""
     np.random.seed(42)
@@ -2681,7 +2544,7 @@ elif page == "📥 Export":
         st.subheader("Data Preview")
         st.dataframe(df.head(10), use_container_width=True)
 
-elif page == "🧹 SQL CSV Cleaner":
+elif page == "🧹 SQL Cleaner":
     st.title("🧹 Advanced SQL CSV Cleaner & Analyzer")
     st.markdown("Upload your CSV, clean it with SQL, and visualize the results!")
     
@@ -2958,9 +2821,9 @@ elif page == "🧹 SQL CSV Cleaner":
             with tab2:
                 # Visualizations
                 if st.session_state.cleaned_df is not None:
-                    create_sql_cleaner_visualizations(st.session_state.original_df, st.session_state.cleaned_df)
+                    create_visualizations(st.session_state.original_df, st.session_state.cleaned_df)
                 else:
-                    create_sql_cleaner_visualizations(st.session_state.original_df)
+                    create_visualizations(st.session_state.original_df)
             
             with tab3:
                 # Data preview
@@ -3173,7 +3036,8 @@ elif page == "🧹 SQL CSV Cleaner":
             - **String Functions:** TRIM, UPPER, LOWER, REPLACE for text cleaning
             - **Aggregations:** GROUP BY for summarizing data
             """)
-            
+
+
 # Footer
 st.markdown("---")
 st.markdown(
